@@ -69,9 +69,16 @@ function ProfileManager:get_open_buffer_files()
 end
 
 -- Update profile with buffer files
----@param profile_name string Profile name
+---@param profile_name string? Profile name
 ---@return boolean success
 function ProfileManager:update_profile_with_buffers(profile_name)
+  profile_name = profile_name or self.current_profile
+
+  if not profile_name then
+    vim.notify("No profile specified", vim.log.levels.ERROR)
+    return false
+  end
+
   local config = self:read_config()
   if not config or not config.profiles or not config.profiles[profile_name] then
     return false

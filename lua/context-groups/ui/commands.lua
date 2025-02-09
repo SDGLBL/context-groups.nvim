@@ -36,36 +36,6 @@ local function create_profile_from_current(name, opts)
   return llm_ctx:create_profile_from_context(name, files)
 end
 
--- Update LLM Context from current context group
-local function update_llm_files(auto_switch)
-  if not ensure_llm_context() then
-    return false
-  end
-
-  local files = llm_ctx.profile_manager:get_open_buffer_files()
-  if #files == 0 then
-    vim.notify("No files in current context group", vim.log.levels.WARN)
-    return false
-  end
-
-  -- Create temporary profile if needed
-  local success = true
-  if auto_switch then
-    local temp_name = "temp_" .. os.time()
-    success = create_profile_from_current(temp_name)
-    if success then
-      success = llm_ctx:switch_profile(temp_name)
-    end
-  end
-
-  -- Update files
-  if success then
-    success = llm_ctx:update_files()
-  end
-
-  return success
-end
-
 -- Setup plugin commands
 function M.setup()
   -- Regular context group commands...
@@ -222,20 +192,8 @@ function M.setup()
     desc = "Create new LLM Context profile from current context group (! to switch)",
   })
 
-  -- Update LLM Context files
-  vim.api.nvim_create_user_command("ContextGroupUpdateLLM", function(args)
-    if update_llm_files(args.bang) then
-      vim.notify("Updated LLM Context files")
-    else
-      vim.notify("Failed to update LLM Context files", vim.log.levels.ERROR)
-    end
-  end, {
-    bang = true,
-    desc = "Update LLM Context files (! to create temporary profile)",
-  })
-
   -- Sync context group with current profile
-  vim.api.nvim_create_user_command("ContextGroupSync", function()
+  vim.api.nvim_create_user_command("ContextGroupSync", function(args)
     if not ensure_llm_context() then
       return
     end
@@ -280,6 +238,10 @@ function M.setup()
           table.insert(lines, "  - " .. file)
         end
       end
+
+      llm_ctx:update_files_with_buffer()
+      llm_ctx:update_files()
+
       vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
     else
       vim.notify("Context group is in sync with current profile", vim.log.levels.INFO)

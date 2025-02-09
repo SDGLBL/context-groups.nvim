@@ -98,6 +98,12 @@ function LLMContext:update_files()
   return self.profile_manager:update_files()
 end
 
+-- Update
+---@param profile string? Profile name
+function LLMContext:update_files_with_buffer(profile)
+  return self.profile_manager:update_profile_with_buffers(profile)
+end
+
 ---Get current context files
 ---@return string[] files List of file paths
 function LLMContext:get_context_files()

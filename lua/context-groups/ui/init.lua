@@ -34,8 +34,8 @@ function M.setup()
   -- Update LLM context
   if keymaps.update_llm then
     vim.keymap.set("n", keymaps.update_llm, function()
-      vim.cmd("ContextGroupUpdateLLM")
-    end, { desc = "Update LLM context" })
+      vim.cmd("ContextGroupSync")
+    end, { desc = "Sync LLM context" })
   end
 end
 

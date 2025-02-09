@@ -6,6 +6,21 @@ local picker = require("context-groups.ui.picker")
 
 local M = {}
 
+-- LLM Context instance
+---@type LLMContext
+local llm_ctx = nil
+
+-- Initialize LLM Context
+local function ensure_llm_context()
+  if not llm_ctx then
+    local project = require("context-groups.core.project")
+    local LLMContext = require("context-groups.llm_context")
+    local root = project.find_root(vim.fn.expand("%:p"))
+    llm_ctx = LLMContext.new(root)
+  end
+  return llm_ctx:is_initialized() or llm_ctx:initialize()
+end
+
 -- Setup plugin commands
 function M.setup()
   -- Add file to context group
@@ -114,6 +129,91 @@ function M.setup()
     vim.notify("Git changes in export: " .. (cfg.export.show_git_changes and "shown" or "hidden"))
   end, {
     desc = "Toggle git changes in export",
+  })
+  -- Initialize LLM Context
+  vim.api.nvim_create_user_command("ContextGroupInitLLM", function()
+    if ensure_llm_context() then
+      vim.notify("LLM Context initialized successfully")
+    else
+      vim.notify("Failed to initialize LLM Context", vim.log.levels.ERROR)
+    end
+  end, {
+    desc = "Initialize LLM Context for the project",
+  })
+
+  -- Switch LLM Context profile
+  vim.api.nvim_create_user_command("ContextGroupSwitchProfile", function(args)
+    if not ensure_llm_context() then
+      return
+    end
+
+    local profile = args.args
+    if profile == "" then
+      -- Show profile picker
+      require("context-groups.ui.picker").show_profile_picker()
+    else
+      -- Switch to specified profile
+      if llm_ctx:switch_profile(profile) then
+        vim.notify(string.format("Switched to profile: %s", profile))
+      end
+    end
+  end, {
+    nargs = "?",
+    complete = function()
+      return llm_ctx and llm_ctx:get_profiles() or {}
+    end,
+    desc = "Switch LLM Context profile",
+  })
+
+  -- Create new profile from current context group
+  vim.api.nvim_create_user_command("ContextGroupCreateProfile", function(args)
+    if not ensure_llm_context() then
+      return
+    end
+
+    local name = args.args
+    if name == "" then
+      vim.notify("Profile name required", vim.log.levels.ERROR)
+      return
+    end
+
+    -- Get current context files
+    local files = core.get_context_files()
+
+    -- Create profile configuration
+    local success = llm_ctx:create_profile(name, {
+      only_include = {
+        full_files = files,
+      },
+      settings = {
+        no_media = true,
+        with_user_notes = true,
+      },
+    })
+
+    if success then
+      vim.notify(string.format("Created profile: %s", name))
+    else
+      vim.notify("Failed to create profile", vim.log.levels.ERROR)
+    end
+  end, {
+    nargs = 1,
+    desc = "Create new LLM Context profile from current context group",
+  })
+
+  -- Update LLM Context files
+  vim.api.nvim_create_user_command("ContextGroupUpdateLLM", function()
+    if not ensure_llm_context() then
+      return
+    end
+
+    if llm_ctx:update_files() then
+      vim.notify("Updated LLM Context files")
+    else
+      vim.notify("Failed to update LLM Context files", vim.log.levels.ERROR)
+    end
+  end, {
+    desc = "Update LLM Context files",
   })
 end
 

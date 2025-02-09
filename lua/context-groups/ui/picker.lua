@@ -308,4 +308,68 @@ function M.show_imports_picker()
     :find()
 end
 
+-- Show LLM Context profile picker
+function M.show_profile_picker()
+  local project = require("context-groups.core.project")
+  local LLMContext = require("context-groups.llm_context")
+
+  -- Get LLM Context instance
+  local root = project.find_root(vim.fn.expand("%:p"))
+  local llm_ctx = LLMContext.new(root)
+
+  if not llm_ctx:is_initialized() then
+    vim.notify("LLM Context not initialized. Run :ContextGroupInitLLM first.", vim.log.levels.ERROR)
+    return
+  end
+
+  -- Get available profiles
+  local profiles = llm_ctx:get_profiles()
+
+  -- Create profile picker
+  pickers
+    .new(config.get().telescope_theme, {
+      prompt_title = "Switch LLM Context Profile",
+      finder = finders.new_table({
+        results = profiles,
+        entry_maker = function(profile)
+          return {
+            value = profile,
+            display = profile,
+            ordinal = profile,
+          }
+        end,
+      }),
+      sorter = conf.generic_sorter({}),
+      attach_mappings = function(prompt_bufnr, map)
+        -- Switch to selected profile
+        local function switch_profile(close)
+          local selection = action_state.get_selected_entry()
+
+          if selection then
+            if llm_ctx:switch_profile(selection.value) then
+              vim.notify(string.format("Switched to profile: %s", selection.value))
+            end
+          end
+
+          if close then
+            actions.close(prompt_bufnr)
+          end
+        end
+
+        -- Switch and close
+        map("i", "<CR>", function()
+          switch_profile(true)
+        end)
+
+        -- Switch and continue
+        map("i", "<C-Space>", function()
+          switch_profile(false)
+        end)
+
+        return true
+      end,
+    })
+    :find()
+end
+
 return M

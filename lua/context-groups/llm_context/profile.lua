@@ -100,9 +100,8 @@ function ProfileManager:update_profile_with_buffers(profile_name)
     return result
   end
 
-  profile["only-include"].full_files = deduplicate(vim.list_extend(profile["only-include"].full_files, buffer_files))
-  profile["only-include"].outline_files =
-    deduplicate(vim.list_extend(profile["only-include"].outline_files, buffer_files))
+  profile["only-include"].full_files = deduplicate(buffer_files)
+  profile["only-include"].outline_files = deduplicate(buffer_files)
 
   -- Write updated configuration
   return self:write_config(config)

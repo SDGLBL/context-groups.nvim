@@ -26,7 +26,7 @@ local function create_profile_from_current(name, opts)
   opts = opts or {}
 
   -- Get current context files
-  local files = core.get_context_files()
+  local files = llm_ctx.profile_manager:get_open_buffer_files()
   if #files == 0 then
     vim.notify("No files in current context group", vim.log.levels.WARN)
     return false
@@ -42,7 +42,7 @@ local function update_llm_files(auto_switch)
     return false
   end
 
-  local files = core.get_context_files()
+  local files = llm_ctx.profile_manager:get_open_buffer_files()
   if #files == 0 then
     vim.notify("No files in current context group", vim.log.levels.WARN)
     return false
@@ -246,7 +246,7 @@ function M.setup()
       return
     end
 
-    local context_files = core.get_context_files()
+    local context_files = llm_ctx.profile_manager:get_open_buffer_files()
     local llm_files = llm_ctx:get_context_files()
 
     -- Compare files

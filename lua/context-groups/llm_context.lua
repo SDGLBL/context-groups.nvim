@@ -2,7 +2,7 @@
 
 ---@class LLMContext
 ---@field private root string Project root directory
----@field private profile_manager ProfileManager Profile manager instance
+---@field public profile_manager ProfileManager Profile manager instance
 local LLMContext = {}
 LLMContext.__index = LLMContext
 

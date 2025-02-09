@@ -2,6 +2,7 @@
 ---@field add_context string Keymap to add context file
 ---@field show_context string Keymap to show context group
 ---@field add_imports? string Keymap to add imports to context group
+---@field update_llm? string Keymap to update LLM context
 
 ---@class ImportPreferences
 ---@field show_stdlib boolean Show standard library imports
@@ -27,6 +28,7 @@ local DEFAULT_CONFIG = {
     add_context = "<leader>ca",
     show_context = "<leader>cs",
     add_imports = "<leader>ci",
+    update_llm = "<leader>cr",
   },
   storage_path = vim.fn.stdpath("data") .. "/context-groups",
   import_prefs = {

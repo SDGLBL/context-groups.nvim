@@ -30,6 +30,13 @@ function M.setup()
       picker.show_imports_picker()
     end, { desc = "Add imports to context group" })
   end
+
+  -- Update LLM context
+  if keymaps.update_llm then
+    vim.keymap.set("n", keymaps.update_llm, function()
+      vim.cmd("ContextGroupUpdateLLM")
+    end, { desc = "Update LLM context" })
+  end
 end
 
 return M

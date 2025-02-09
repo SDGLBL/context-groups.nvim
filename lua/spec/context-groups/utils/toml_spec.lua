@@ -80,7 +80,7 @@ describe("TOML encoder", function()
             no_media = true,
             with_user_notes = false,
           },
-          only_include = {
+          ["only-include"] = {
             full_files = { "**/*" },
             outline_files = { "**/*" },
           },

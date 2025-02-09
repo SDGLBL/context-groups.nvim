@@ -3,7 +3,7 @@
 ---@class Profile
 ---@field gitignores ProfileGitignores Gitignore patterns
 ---@field settings ProfileSettings Profile settings
----@field only_include ProfileIncludes File include patterns
+---@field only-include ProfileIncludes File include patterns
 ---@field base? string Base profile name for inheritance
 ---@field prompt? string Path to prompt template
 
@@ -37,7 +37,7 @@ local TOML = require("context-groups.utils.toml")
 function ProfileManager:path_to_pattern(file_path)
   -- Remove leading ./ if present
   local pattern = file_path:gsub("^%./", "")
-  
+
   -- Escape special characters in the path, except for forward slashes
   pattern = pattern:gsub("[%^%$%(%)%%%.%[%]%+%-%?]", function(c)
     if c == "/" then
@@ -99,16 +99,11 @@ function ProfileManager:update_profile_with_buffers(profile_name)
   end
 
   -- Update profile's only_include patterns
+  ---@type Profile
   local profile = config.profiles[profile_name]
-  profile.only_include = profile.only_include or {}
-  profile.only_include.full_files = vim.list_extend(
-    profile.only_include.full_files or {},
-    patterns
-  )
-  profile.only_include.outline_files = vim.list_extend(
-    profile.only_include.outline_files or {},
-    patterns
-  )
+  profile["only-include"] = profile["only-include"] or {}
+  profile["only-include"].full_files = vim.list_extend(profile["only-include"].full_files or {}, patterns)
+  profile["only-include"].outline_files = vim.list_extend(profile["only-include"].outline_files or {}, patterns)
 
   -- Remove duplicates while preserving order
   local function deduplicate(list)
@@ -123,8 +118,8 @@ function ProfileManager:update_profile_with_buffers(profile_name)
     return result
   end
 
-  profile.only_include.full_files = deduplicate(profile.only_include.full_files)
-  profile.only_include.outline_files = deduplicate(profile.only_include.outline_files)
+  profile["only-include"].full_files = deduplicate(profile["only-include"].full_files)
+  profile["only-include"].outline_files = deduplicate(profile["only-include"].outline_files)
 
   -- Write updated configuration
   return self:write_config(config)
@@ -272,7 +267,7 @@ function ProfileManager:create_profile(name, opts)
       with_user_notes = false,
       with_prompt = false,
     },
-    only_include = opts.only_include or {
+    ["only-include"] = opts.only_include or {
       full_files = { "**/*" },
       outline_files = { "**/*" },
     },
@@ -351,7 +346,9 @@ function ProfileManager:get_context_files()
 
   local files = {}
   local function extract_paths(section)
-    if not section then return end
+    if not section then
+      return
+    end
     if vim.tbl_islist(section) then
       for _, entry in ipairs(section) do
         if type(entry) == "table" and entry.path then
@@ -368,8 +365,12 @@ function ProfileManager:get_context_files()
   end
 
   -- Extract from both files and outlines sections
-  if parsed.files then extract_paths(parsed.files) end
-  if parsed.outlines then extract_paths(parsed.outlines) end
+  if parsed.files then
+    extract_paths(parsed.files)
+  end
+  if parsed.outlines then
+    extract_paths(parsed.outlines)
+  end
 
   -- Remove duplicates while preserving order
   local seen = {}

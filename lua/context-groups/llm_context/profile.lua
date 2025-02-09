@@ -53,7 +53,7 @@ function ProfileManager:get_open_buffer_files()
           table.insert(files, path)
 
           -- 获取这个 buffer 的上下文组文件
-          local context_files = core.get_context_files(bufnr)
+          local context_files = core.get_context_files(bufnr, { relative = true })
           for _, context_file in ipairs(context_files) do
             if not seen[context_file] then
               seen[context_file] = true
@@ -100,8 +100,9 @@ function ProfileManager:update_profile_with_buffers(profile_name)
     return result
   end
 
-  profile["only-include"].full_files = deduplicate(profile["only-include"].full_files)
-  profile["only-include"].outline_files = deduplicate(profile["only-include"].outline_files)
+  profile["only-include"].full_files = deduplicate(vim.list_extend(profile["only-include"].full_files, buffer_files))
+  profile["only-include"].outline_files =
+    deduplicate(vim.list_extend(profile["only-include"].outline_files, buffer_files))
 
   -- Write updated configuration
   return self:write_config(config)

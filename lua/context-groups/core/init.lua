@@ -75,8 +75,9 @@ end
 
 ---获取指定buffer的上下文组
 ---@param bufnr integer|nil Buffer number (nil for current buffer)
+---@param opts? {relative: boolean} 选项 {relative: 是否返回相对路径，默认 false}
 ---@return string[] context_files 上下文文件列表
-function M.get_context_files(bufnr)
+function M.get_context_files(bufnr, opts)
   local file_path = get_current_filepath(bufnr)
   if not file_path then
     vim.notify("No valid file path found", vim.log.levels.WARN)
@@ -89,10 +90,20 @@ function M.get_context_files(bufnr)
   -- 获取当前文件的上下文组
   local context_group = storage:get(file_path) or {}
 
-  -- 过滤掉不存在的文件
-  return vim.tbl_filter(function(file)
-    return vim.fn.filereadable(file) == 1
-  end, context_group)
+  -- 过滤掉不存在的文件并转换为相对路径
+  return vim.tbl_map(
+    function(file)
+      -- 只处理存在的文件
+      if vim.fn.filereadable(file) == 1 and opts and opts.relative then
+        return project.get_relative_path(file)
+      end
+
+      return file
+    end,
+    vim.tbl_filter(function(file)
+      return vim.fn.filereadable(file) == 1
+    end, context_group)
+  )
 end
 
 ---获取指定buffer的所有文件内容

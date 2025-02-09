@@ -31,34 +31,14 @@ ProfileManager.__index = ProfileManager
 
 local TOML = require("context-groups.utils.toml")
 
--- Convert path to glob pattern
----@param file_path string Original file path
----@return string pattern Glob pattern
-function ProfileManager:path_to_pattern(file_path)
-  -- Remove leading ./ if present
-  local pattern = file_path:gsub("^%./", "")
-
-  -- Escape special characters in the path, except for forward slashes
-  pattern = pattern:gsub("[%^%$%(%)%%%.%[%]%+%-%?]", function(c)
-    if c == "/" then
-      return c
-    end
-    return "%" .. c
-  end)
-
-  -- Add /**/* only for directories
-  if vim.fn.isdirectory(vim.fn.fnamemodify(self.config_path, ":h:h") .. "/" .. file_path) == 1 then
-    pattern = pattern:gsub("/*$", "/**/*")
-  end
-
-  return pattern
-end
-
 -- Get all open buffer file paths
 ---@return string[] file_paths
 function ProfileManager:get_open_buffer_files()
-  local buffers = {}
-  -- 获取所有文件类型的缓冲区
+  local files = {}
+  local seen = {}
+  local core = require("context-groups.core")
+
+  -- 获取当前打开的文件
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     -- 只包含正常的文件缓冲区
     if vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buftype == "" then
@@ -69,12 +49,23 @@ function ProfileManager:get_open_buffer_files()
         path = vim.fn.fnamemodify(path, ":p")
         if vim.startswith(path, root_path) then
           path = path:sub(#root_path + 2) -- +2 to remove the trailing slash
-          table.insert(buffers, path)
+          seen[path] = true
+          table.insert(files, path)
+
+          -- 获取这个 buffer 的上下文组文件
+          local context_files = core.get_context_files(bufnr)
+          for _, context_file in ipairs(context_files) do
+            if not seen[context_file] then
+              seen[context_file] = true
+              table.insert(files, context_file)
+            end
+          end
         end
       end
     end
   end
-  return buffers
+
+  return files
 end
 
 -- Update profile with buffer files
@@ -86,24 +77,15 @@ function ProfileManager:update_profile_with_buffers(profile_name)
     return false
   end
 
-  -- Get current buffer files
+  -- Get current buffer files including dependencies
   local buffer_files = self:get_open_buffer_files()
   if #buffer_files == 0 then
     return true -- No files to add
   end
 
-  -- Convert buffer files to patterns
-  local patterns = {}
-  for _, file in ipairs(buffer_files) do
-    table.insert(patterns, self:path_to_pattern(file))
-  end
-
   -- Update profile's only_include patterns
   ---@type Profile
   local profile = config.profiles[profile_name]
-  profile["only-include"] = profile["only-include"] or {}
-  profile["only-include"].full_files = vim.list_extend(profile["only-include"].full_files or {}, patterns)
-  profile["only-include"].outline_files = vim.list_extend(profile["only-include"].outline_files or {}, patterns)
 
   -- Remove duplicates while preserving order
   local function deduplicate(list)
@@ -293,20 +275,30 @@ function ProfileManager:create_profile_from_context(name, context_files)
   -- Get buffer files to include
   local buffer_files = self:get_open_buffer_files()
 
-  -- Combine context files and buffer files
-  local all_files = vim.list_extend(vim.list_extend({}, context_files), buffer_files)
+  -- Combine context files and buffer files, removing duplicates
+  local seen = {}
+  local all_files = {}
 
-  -- Convert files to patterns
-  local patterns = {}
-  for _, file in ipairs(all_files) do
-    table.insert(patterns, self:path_to_pattern(file))
+  local function add_file(file)
+    if not seen[file] then
+      seen[file] = true
+      table.insert(all_files, file)
+    end
   end
 
-  -- Create profile with combined files
+  for _, file in ipairs(context_files) do
+    add_file(file)
+  end
+
+  for _, file in ipairs(buffer_files) do
+    add_file(file)
+  end
+
+  -- Create profile with all files
   return self:create_profile(name, {
     only_include = {
-      full_files = patterns,
-      outline_files = patterns,
+      full_files = all_files,
+      outline_files = all_files,
     },
   })
 end

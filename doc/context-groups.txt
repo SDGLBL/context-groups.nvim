@@ -1,0 +1,349 @@
+*context-groups.txt*  Context management plugin for AI-assisted coding
+
+Author:   SDGLBL <lijieisguge@gmail.com>
+License:  MIT license
+
+================================================================================
+CONTENTS                                                    *context-groups-contents*
+
+1. Introduction ................ |context-groups-introduction|
+2. Setup ....................... |context-groups-setup|
+3. Usage ....................... |context-groups-usage|
+4. Commands .................... |context-groups-commands|
+5. Mappings .................... |context-groups-mappings|
+6. Configuration ............... |context-groups-config|
+7. API ........................ |context-groups-api|
+8. Extensions .................. |context-groups-extensions|
+
+================================================================================
+INTRODUCTION                                            *context-groups-introduction*
+
+Context Groups is a Neovim plugin designed to enhance AI-assisted coding by managing
+context files on a per-buffer basis. It allows users to maintain groups of related
+files that provide additional context for AI models.
+
+Key Features:
+- Per-buffer context group management
+- Project-level configuration persistence
+- Automatic project root detection
+- Telescope integration for file selection and preview
+- LSP integration for intelligent imports
+
+Example workflow:
+>
+  1. Open a file you're working on
+  2. Add related files to the context group using Telescope
+  3. Use the context group with your AI coding assistant
+  4. Manage context files easily with built-in commands
+<
+
+================================================================================
+SETUP                                                        *context-groups-setup*
+
+Add to your Neovim configuration using your preferred package manager:
+
+Using packer.nvim: >
+  use {
+    'username/context-groups.nvim',
+    requires = {
+      'nvim-lua/plenary.nvim',
+      'nvim-telescope/telescope.nvim',
+    }
+  }
+<
+
+Using lazy.nvim: >
+  {
+    'username/context-groups.nvim',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-telescope/telescope.nvim',
+    }
+  }
+<
+
+Basic setup with default settings: >
+  require('context-groups').setup()
+<
+
+Setup with custom configuration: >
+  require('context-groups').setup({
+    keymaps = {
+      add_context = "<leader>ca",
+      show_context = "<leader>cs",
+      add_imports = "<leader>ci",
+    },
+    storage_path = vim.fn.stdpath("data") .. "/context-groups",
+    import_prefs = {
+      show_stdlib = false,
+      show_external = false,
+      ignore_patterns = {},
+    },
+    project_markers = {
+      ".git",
+      ".svn",
+      "package.json",
+      "Cargo.toml",
+      "go.mod",
+      "requirements.txt",
+    },
+  })
+<
+
+================================================================================
+USAGE                                                        *context-groups-usage*
+
+                                                    *context-groups-basic-usage*
+Basic Usage ~
+
+1. Add files to context group:
+   - Use `:ContextGroupAdd` command or press `<leader>ca`
+   - Select files using Telescope interface
+   - Press <CR> to add a file or <C-Space> to add without closing
+
+2. View current context group:
+   - Use `:ContextGroupShow` command or press `<leader>cs`
+   - Preview file contents
+   - Remove files using <C-d>
+   - Open files in split with <C-v>
+
+3. Add imports to context group:
+   - Use `:ContextGroupAddImports` command or press `<leader>ci`
+   - Filter by external/stdlib using <C-e>/<C-t>
+   - Select imports to add to context group
+
+4. Remove files from context group:
+   - Use `:ContextGroupRemove` command with filename
+   - Or use `:ContextGroupShow` and press <C-d>
+
+5. Clear entire context group:
+   - Use `:ContextGroupClear` command
+
+                                                    *context-groups-import-prefs*
+Import Preferences ~
+
+Toggle visibility of different import types:
+- `:ContextGroupToggleStdlib` - Toggle standard library imports
+- `:ContextGroupToggleExternal` - Toggle external dependencies
+
+Default behavior can be configured in setup()
+
+================================================================================
+COMMANDS                                                  *context-groups-commands*
+
+                                                         *:ContextGroupAdd*
+:ContextGroupAdd [path]                
+    Add file to context group. Opens Telescope picker if no path provided.
+
+                                                         *:ContextGroupShow*
+:ContextGroupShow                      
+    Show current context group files with preview.
+
+                                                         *:ContextGroupAddImports*
+:ContextGroupAddImports                
+    Add imported files to context group.
+
+                                                         *:ContextGroupRemove*
+:ContextGroupRemove [path]             
+    Remove file from context group. Shows context group if no path provided.
+
+                                                         *:ContextGroupClear*
+:ContextGroupClear                     
+    Clear all files from current context group.
+
+                                                         *:ContextGroupToggleStdlib*
+:ContextGroupToggleStdlib              
+    Toggle visibility of standard library imports.
+
+                                                         *:ContextGroupToggleExternal*
+:ContextGroupToggleExternal            
+    Toggle visibility of external dependencies.
+
+================================================================================
+MAPPINGS                                                  *context-groups-mappings*
+
+Default key mappings (can be customized in setup):
+
+Normal mode mappings:
+
+`<leader>ca`                   Add file to context group
+`<leader>cs`                   Show current context group
+`<leader>ci`                   Add imports to context group
+
+Telescope picker mappings:
+
+In file picker:
+`<CR>`                        Add file and close picker
+`<C-Space>`                   Add file and keep picker open
+
+In context group viewer:
+`<C-d>`                       Remove file from context group
+`<C-v>`                       Open file in vertical split
+`<C-y>`                       Copy file path to clipboard
+
+In imports picker:
+`<CR>`                        Add import and close picker
+`<C-Space>`                   Add import and keep picker open
+`<C-t>`                       Toggle stdlib visibility
+`<C-e>`                       Toggle external deps visibility
+
+================================================================================
+CONFIGURATION                                              *context-groups-config*
+
+                                              *context-groups-config-options*
+Configuration Options ~
+
+The following options can be set in the setup() call:
+
+keymaps                                            *context-groups-keymaps*
+    Key mappings configuration table
+    Default: >
+      {
+        add_context = "<leader>ca",
+        show_context = "<leader>cs",
+        add_imports = "<leader>ci",
+      }
+<
+
+storage_path                                      *context-groups-storage_path*
+    Path where plugin data is stored
+    Default: `vim.fn.stdpath("data") .. "/context-groups"`
+
+import_prefs                                      *context-groups-import_prefs*
+    Import preferences configuration table
+    Default: >
+      {
+        show_stdlib = false,
+        show_external = false,
+        ignore_patterns = {},
+      }
+<
+
+project_markers                                  *context-groups-project_markers*
+    Markers used to identify project root
+    Default: >
+      {
+        ".git",
+        ".svn",
+        "package.json",
+        "Cargo.toml",
+        "go.mod",
+        "requirements.txt",
+      }
+<
+
+max_preview_lines                              *context-groups-max_preview_lines*
+    Maximum number of lines to show in preview
+    Default: `500`
+
+telescope_theme                                  *context-groups-telescope_theme*
+    Custom telescope theme configuration
+    Default: `nil`
+
+on_context_change                              *context-groups-on_context_change*
+    Function called when context group changes
+    Default: `nil`
+
+language_config                                  *context-groups-language_config*
+    Language specific configurations
+    Default: >
+      {
+        go = {
+          resolve_strategy = "gopls",
+          stdlib_path = vim.fn.systemlist("go env GOROOT")[1],
+          external_path = vim.fn.systemlist("go env GOPATH")[1],
+        },
+        python = {
+          resolve_strategy = "jedi",
+          venv_detection = true,
+          follow_imports = true,
+        },
+      }
+<
+
+================================================================================
+API                                                            *context-groups-api*
+
+Lua API Functions ~
+
+add_context_file({file}, {bufnr})              *context-groups.add_context_file()*
+    Add file to context group.
+
+    Parameters: ~
+        {file}  string   File path to add
+        {bufnr} number?  Target buffer number (optional)
+
+    Returns: ~
+        boolean   Success status
+
+remove_context_file({file}, {bufnr})        *context-groups.remove_context_file()*
+    Remove file from context group.
+
+    Parameters: ~
+        {file}  string   File path to remove
+        {bufnr} number?  Target buffer number (optional)
+
+    Returns: ~
+        boolean   Success status
+
+get_context_files({bufnr})                    *context-groups.get_context_files()*
+    Get list of files in context group.
+
+    Parameters: ~
+        {bufnr} number?  Target buffer number (optional)
+
+    Returns: ~
+        string[]   List of file paths
+
+get_context_contents({bufnr})              *context-groups.get_context_contents()*
+    Get contents of all files in context group.
+
+    Parameters: ~
+        {bufnr} number?  Target buffer number (optional)
+
+    Returns: ~
+        table[]    List of file contents with metadata
+
+clear_context_group({bufnr})                *context-groups.clear_context_group()*
+    Clear all files from context group.
+
+    Parameters: ~
+        {bufnr} number?  Target buffer number (optional)
+
+    Returns: ~
+        boolean   Success status
+
+show_context_group()                        *context-groups.show_context_group()*
+    Show context group picker.
+
+show_imports_picker()                      *context-groups.show_imports_picker()*
+    Show imports picker.
+
+================================================================================
+EXTENSIONS                                              *context-groups-extensions*
+
+The plugin provides extension points for additional functionality:
+
+LSP Handlers ~
+Custom LSP handlers can be registered for additional language support:
+>
+  require('context-groups.lsp').register_handler('rust', {
+    get_imports = function(bufnr) ... end,
+    is_stdlib = function(path) ... end,
+    is_external = function(path) ... end,
+    resolve_import = function(import_path, from_file) ... end,
+  })
+<
+
+Storage Backends ~
+The storage system can be extended with custom backends:
+>
+  local Storage = require('context-groups.core.storage')
+  local custom_storage = Storage.new('custom')
+  
+  -- Implement custom storage methods
+  function custom_storage:load() ... end
+  function custom_storage:save() ... end
+<
+
+ vim:tw=78:ts=8:ft=help:norl:

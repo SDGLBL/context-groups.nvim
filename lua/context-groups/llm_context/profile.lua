@@ -31,6 +31,105 @@ ProfileManager.__index = ProfileManager
 
 local TOML = require("context-groups.utils.toml")
 
+-- Convert path to glob pattern
+---@param file_path string Original file path
+---@return string pattern Glob pattern
+function ProfileManager:path_to_pattern(file_path)
+  -- Remove leading ./ if present
+  local pattern = file_path:gsub("^%./", "")
+  
+  -- Escape special characters in the path, except for forward slashes
+  pattern = pattern:gsub("[%^%$%(%)%%%.%[%]%+%-%?]", function(c)
+    if c == "/" then
+      return c
+    end
+    return "%" .. c
+  end)
+
+  -- Add /**/* only for directories
+  if vim.fn.isdirectory(vim.fn.fnamemodify(self.config_path, ":h:h") .. "/" .. file_path) == 1 then
+    pattern = pattern:gsub("/*$", "/**/*")
+  end
+
+  return pattern
+end
+
+-- Get all open buffer file paths
+---@return string[] file_paths
+function ProfileManager:get_open_buffer_files()
+  local buffers = {}
+  -- 获取所有文件类型的缓冲区
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    -- 只包含正常的文件缓冲区
+    if vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buftype == "" then
+      local path = vim.api.nvim_buf_get_name(bufnr)
+      if path and path ~= "" and vim.fn.filereadable(path) == 1 then
+        -- 转换为相对路径
+        local root_path = vim.fn.fnamemodify(self.config_path, ":h:h")
+        path = vim.fn.fnamemodify(path, ":p")
+        if vim.startswith(path, root_path) then
+          path = path:sub(#root_path + 2) -- +2 to remove the trailing slash
+          table.insert(buffers, path)
+        end
+      end
+    end
+  end
+  return buffers
+end
+
+-- Update profile with buffer files
+---@param profile_name string Profile name
+---@return boolean success
+function ProfileManager:update_profile_with_buffers(profile_name)
+  local config = self:read_config()
+  if not config or not config.profiles or not config.profiles[profile_name] then
+    return false
+  end
+
+  -- Get current buffer files
+  local buffer_files = self:get_open_buffer_files()
+  if #buffer_files == 0 then
+    return true -- No files to add
+  end
+
+  -- Convert buffer files to patterns
+  local patterns = {}
+  for _, file in ipairs(buffer_files) do
+    table.insert(patterns, self:path_to_pattern(file))
+  end
+
+  -- Update profile's only_include patterns
+  local profile = config.profiles[profile_name]
+  profile.only_include = profile.only_include or {}
+  profile.only_include.full_files = vim.list_extend(
+    profile.only_include.full_files or {},
+    patterns
+  )
+  profile.only_include.outline_files = vim.list_extend(
+    profile.only_include.outline_files or {},
+    patterns
+  )
+
+  -- Remove duplicates while preserving order
+  local function deduplicate(list)
+    local seen = {}
+    local result = {}
+    for _, item in ipairs(list) do
+      if not seen[item] then
+        seen[item] = true
+        table.insert(result, item)
+      end
+    end
+    return result
+  end
+
+  profile.only_include.full_files = deduplicate(profile.only_include.full_files)
+  profile.only_include.outline_files = deduplicate(profile.only_include.outline_files)
+
+  -- Write updated configuration
+  return self:write_config(config)
+end
+
 -- Create new ProfileManager instance
 ---@param root string Project root directory
 ---@return ProfileManager
@@ -39,31 +138,31 @@ function ProfileManager.new(root)
   self.config_path = root .. "/.llm-context/config.toml"
   self.ctx_file = root .. "/.llm-context/curr_ctx.toml"
   self.profiles = {}
-
-  -- Check if configuration is initialized
-  ---@return boolean
-  function ProfileManager:is_initialized()
-    return vim.fn.filereadable(self.config_path) == 1
-  end
   self.current_profile = nil
 
-  -- Try to activate code profile by default
+  -- Try to activate code profile by default if initialized
   if self:is_initialized() then
     local config = self:read_config()
     if config and config.profiles and config.profiles.code then
       self:switch_profile("code")
+      -- Add current buffer files to code profile
+      self:update_profile_with_buffers("code")
     end
   end
 
-  self.profiles = {}
-  self.current_profile = nil
   return self
+end
+
+-- Check if initialized
+---@return boolean
+function ProfileManager:is_initialized()
+  return vim.fn.filereadable(self.config_path) == 1
 end
 
 -- Read and parse TOML configuration
 ---@return table? config
 function ProfileManager:read_config()
-  if vim.fn.filereadable(self.config_path) ~= 1 then
+  if not self:is_initialized() then
     return nil
   end
 
@@ -121,6 +220,9 @@ function ProfileManager:switch_profile(profile)
     vim.notify("Profile '" .. profile .. "' not found", vim.log.levels.ERROR)
     return false
   end
+
+  -- Update profile with current buffer files before switching
+  self:update_profile_with_buffers(profile)
 
   -- Run lc-set-profile command
   local cmd = string.format(
@@ -181,6 +283,9 @@ function ProfileManager:create_profile(name, opts)
     return false
   end
 
+  -- Add current buffer files to the new profile
+  self:update_profile_with_buffers(name)
+
   -- Switch to new profile
   return self:switch_profile(name)
 end
@@ -190,17 +295,19 @@ end
 ---@param context_files string[] Current context files
 ---@return boolean success
 function ProfileManager:create_profile_from_context(name, context_files)
-  -- Convert context files to glob patterns
+  -- Get buffer files to include
+  local buffer_files = self:get_open_buffer_files()
+
+  -- Combine context files and buffer files
+  local all_files = vim.list_extend(vim.list_extend({}, context_files), buffer_files)
+
+  -- Convert files to patterns
   local patterns = {}
-  for _, file in ipairs(context_files) do
-    -- Convert file path to glob pattern
-    local pattern = file:gsub("^%./", "") -- Remove leading ./
-    pattern = pattern:gsub("[%^%$%(%)%%%.%[%]%+%-%?]", "%%%1") -- Escape special characters
-    pattern = pattern:gsub("/*$", "/**/*") -- Add glob for directories
-    table.insert(patterns, pattern)
+  for _, file in ipairs(all_files) do
+    table.insert(patterns, self:path_to_pattern(file))
   end
 
-  -- Create profile with context files
+  -- Create profile with combined files
   return self:create_profile(name, {
     only_include = {
       full_files = patterns,
@@ -244,9 +351,7 @@ function ProfileManager:get_context_files()
 
   local files = {}
   local function extract_paths(section)
-    if not section then
-      return
-    end
+    if not section then return end
     if vim.tbl_islist(section) then
       for _, entry in ipairs(section) do
         if type(entry) == "table" and entry.path then
@@ -263,12 +368,8 @@ function ProfileManager:get_context_files()
   end
 
   -- Extract from both files and outlines sections
-  if parsed.files then
-    extract_paths(parsed.files)
-  end
-  if parsed.outlines then
-    extract_paths(parsed.outlines)
-  end
+  if parsed.files then extract_paths(parsed.files) end
+  if parsed.outlines then extract_paths(parsed.outlines) end
 
   -- Remove duplicates while preserving order
   local seen = {}

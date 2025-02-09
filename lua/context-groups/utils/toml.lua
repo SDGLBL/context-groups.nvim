@@ -7,7 +7,7 @@ local TOML = {
 
 local function escapeStr(str, multiline)
   if multiline then
-    return str
+    return str:gsub("\n$", "") -- Remove trailing newline
   end
   str = str:gsub("\\", "\\\\")
   str = str:gsub("\b", "\\b")
@@ -32,7 +32,7 @@ local function encodeValue(val, indent)
   if t == "string" then
     if val:find("\n") then
       -- Use literal multi-line string for better readability
-      return '"""\n' .. val:gsub('\n$', '') .. '\n"""'
+      return '"""\n' .. escapeStr(val, true) .. '"""'
     end
     return '"' .. escapeStr(val) .. '"'
   elseif t == "number" or t == "boolean" then
@@ -207,17 +207,19 @@ local function parse(toml, options)
     return cursor <= toml:len()
   end
 
-  local function err(message)
-    local line = 1
-    local c = 0
-    for l in toml:gmatch("(.-)" .. nl) do
-      c = c + l:len()
-      if c >= cursor then
-        break
+  local function err(message, strictOnly)
+    if not strictOnly or (strictOnly and strict) then
+      local line = 1
+      local c = 0
+      for l in toml:gmatch("(.-)" .. nl) do
+        c = c + l:len()
+        if c >= cursor then
+          break
+        end
+        line = line + 1
       end
-      line = line + 1
+      error("TOML: " .. message .. (strictOnly and " on line " .. line or "") .. ".", 4)
     end
-    error("TOML: " .. message .. (message:match("Cannot redefine table") and "" or " on line " .. line .. "."), 4)
   end
 
   -- Forward declarations for mutual recursion
@@ -273,6 +275,10 @@ local function parse(toml, options)
       step()
     end
 
+    if multiline then
+      str = str:gsub("\n+$", "\n")
+    end
+
     return str
   end
 
@@ -296,4 +302,163 @@ local function parse(toml, options)
       if char() == "]" then
         step()
         break
-      elseif char():match(nl) or char() == ","
+      elseif char():match(nl) or char() == "," then
+        step()
+        skipWhitespace()
+      else
+        local value = parseValue()
+        if value ~= nil then
+          table.insert(array, value)
+        end
+        skipWhitespace()
+      end
+    end
+
+    return array
+  end
+
+  local function parseInlineTable()
+    local tbl = {}
+    step() -- skip {
+    skipWhitespace()
+
+    while bounds() do
+      if char() == "}" then
+        step()
+        break
+      elseif char():match(nl) then
+        err("Newline not allowed in inline table")
+      elseif char() == "," then
+        step()
+        skipWhitespace()
+      else
+        local key = ""
+        if char() == '"' or char() == "'" then
+          key = parseString()
+        else
+          while bounds() and not char():match(ws) and char() ~= "=" do
+            key = key .. char()
+            step()
+          end
+        end
+        
+        skipWhitespace()
+        if char() ~= "=" then
+          err("Expected '=' after key in inline table")
+        end
+        
+        step() -- skip =
+        skipWhitespace()
+        
+        local value = parseValue()
+        if value ~= nil then
+          tbl[key] = value
+        end
+        
+        skipWhitespace()
+      end
+    end
+
+    return tbl
+  end
+
+  function parseValue()
+    skipWhitespace()
+    
+    if char() == '"' or char() == "'" then
+      return parseString()
+    elseif char():match("[%+%-0-9]") then
+      return parseNumber()
+    elseif char() == "[" then
+      return parseArray()
+    elseif char() == "{" then
+      return parseInlineTable()
+    elseif char() == "t" then
+      if toml:sub(cursor, cursor + 3) == "true" then
+        step(4)
+        return true
+      end
+      err("Invalid boolean")
+    elseif char() == "f" then
+      if toml:sub(cursor, cursor + 4) == "false" then
+        step(5)
+        return false
+      end
+      err("Invalid boolean")
+    else
+      err("Invalid value")
+    end
+  end
+
+  while bounds() do
+    skipWhitespace()
+
+    if char() == "#" then
+      while bounds() and not char():match(nl) do
+        step()
+      end
+    elseif char() == "[" then
+      step()
+      local isArray = char() == "["
+      if isArray then
+        step()
+      end
+
+      local tableName = ""
+      while bounds() and char() ~= "]" do
+        tableName = tableName .. char()
+        step()
+      end
+
+      if isArray then
+        step() -- skip second ]
+      end
+      step() -- skip first ]
+
+      local path = {}
+      for p in tableName:gmatch("[^%.]+") do
+        table.insert(path, p)
+      end
+
+      obj = out
+      for i, p in ipairs(path) do
+        if i == #path and isArray then
+          obj[p] = obj[p] or {}
+          table.insert(obj[p], {})
+          obj = obj[p][#obj[p]]
+        else
+          if obj[p] and not isArray and i == #path then
+            error("TOML: Cannot redefine table")
+          end
+          obj[p] = obj[p] or {}
+          obj = obj[p]
+        end
+      end
+    elseif char() == "=" then
+      step()
+      skipWhitespace()
+
+      buffer = trim(buffer)
+      if buffer == "" then
+        err("Empty key name")
+      end
+
+      if obj[buffer] and strict then
+        err('Cannot redefine key "' .. buffer .. '"', true)
+      end
+
+      obj[buffer] = parseValue()
+      buffer = ""
+    else
+      buffer = buffer .. char()
+      step()
+    end
+  end
+
+  return out
+end
+
+TOML.encode = encode
+TOML.parse = parse
+
+return TOML

@@ -68,52 +68,6 @@ function ProfileManager:get_open_buffer_files()
   return files
 end
 
--- Update profile with buffer files
----@param profile_name string? Profile name
----@return boolean success
-function ProfileManager:update_profile_with_buffers(profile_name)
-  profile_name = profile_name or self.current_profile
-
-  if not profile_name then
-    vim.notify("No profile specified", vim.log.levels.ERROR)
-    return false
-  end
-
-  local config = self:read_config()
-  if not config or not config.profiles or not config.profiles[profile_name] then
-    return false
-  end
-
-  -- Get current buffer files including dependencies
-  local buffer_files = self:get_open_buffer_files()
-  if #buffer_files == 0 then
-    return true -- No files to add
-  end
-
-  -- Update profile's only_include patterns
-  ---@type Profile
-  local profile = config.profiles[profile_name]
-
-  -- Remove duplicates while preserving order
-  local function deduplicate(list)
-    local seen = {}
-    local result = {}
-    for _, item in ipairs(list) do
-      if not seen[item] then
-        seen[item] = true
-        table.insert(result, item)
-      end
-    end
-    return result
-  end
-
-  profile["only-include"].full_files = deduplicate(buffer_files)
-  profile["only-include"].outline_files = deduplicate(buffer_files)
-
-  -- Write updated configuration
-  return self:write_config(config)
-end
-
 -- Create new ProfileManager instance
 ---@param root string Project root directory
 ---@return ProfileManager
@@ -382,6 +336,110 @@ function ProfileManager:get_context_files()
   end
 
   return unique_files
+end
+
+---Update profile with specific file lists
+---@param profile_name string? Profile name
+---@param added string[] Files to add
+---@param removed string[] Files to remove
+---@return boolean success
+function ProfileManager:update_profile_with_file_lists(profile_name, added, removed)
+  profile_name = profile_name or self.current_profile
+
+  if not profile_name then
+    vim.notify("No profile specified", vim.log.levels.ERROR)
+    return false
+  end
+
+  local config = self:read_config()
+  if not config or not config.profiles or not config.profiles[profile_name] then
+    return false
+  end
+
+  -- Get current profile
+  ---@type Profile
+  local profile = config.profiles[profile_name]
+
+  -- Current file lists
+  local current_files = profile["only-include"].full_files or {}
+
+  -- Create new file lists removing deleted files and adding new ones
+  local new_files = {}
+  local seen = {}
+
+  -- Helper to add file if not seen
+  local function add_file(file)
+    if not seen[file] then
+      seen[file] = true
+      table.insert(new_files, file)
+    end
+  end
+
+  -- Add current files that weren't removed
+  for _, file in ipairs(current_files) do
+    if not vim.tbl_contains(removed, file) then
+      add_file(file)
+    end
+  end
+
+  -- Add new files
+  for _, file in ipairs(added) do
+    add_file(file)
+  end
+
+  -- Update profile's only_include patterns
+  profile["only-include"].full_files = new_files
+  profile["only-include"].outline_files = new_files
+
+  -- Write updated configuration
+  return self:write_config(config)
+end
+
+-- Update profile with buffer files (refactored to use update_profile_with_file_lists)
+---@param profile_name string? Profile name
+---@return boolean success
+function ProfileManager:update_profile_with_buffers(profile_name)
+  -- Get current buffer files
+  local buffer_files = self:get_open_buffer_files()
+  if #buffer_files == 0 then
+    return true -- No files to add
+  end
+
+  -- Get current profile
+  profile_name = profile_name or self.current_profile
+  if not profile_name then
+    vim.notify("No profile specified", vim.log.levels.ERROR)
+    return false
+  end
+
+  local config = self:read_config()
+  if not config or not config.profiles or not config.profiles[profile_name] then
+    return false
+  end
+
+  -- Get current files
+  local current_files = config.profiles[profile_name]["only-include"].full_files or {}
+
+  -- Calculate differences
+  local added = {}
+  local removed = {}
+
+  -- Find new files to add
+  for _, file in ipairs(buffer_files) do
+    if not vim.tbl_contains(current_files, file) then
+      table.insert(added, file)
+    end
+  end
+
+  -- Find files to remove (files that exist in current but not in buffer_files)
+  for _, file in ipairs(current_files) do
+    if not vim.tbl_contains(buffer_files, file) then
+      table.insert(removed, file)
+    end
+  end
+
+  -- Update profile with calculated differences
+  return self:update_profile_with_file_lists(profile_name, added, removed)
 end
 
 return ProfileManager

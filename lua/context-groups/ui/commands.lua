@@ -193,7 +193,7 @@ function M.setup()
   })
 
   -- Sync context group with current profile
-  vim.api.nvim_create_user_command("ContextGroupSync", function(args)
+  vim.api.nvim_create_user_command("ContextGroupSync", function()
     if not ensure_llm_context() then
       return
     end
@@ -207,7 +207,7 @@ function M.setup()
     local context_files = llm_ctx.profile_manager:get_open_buffer_files()
     local llm_files = llm_ctx:get_context_files()
 
-    -- Compare files
+    -- Calculate differences
     local added = {}
     local removed = {}
 
@@ -223,7 +223,7 @@ function M.setup()
       end
     end
 
-    -- Show differences
+    -- Show differences and update
     if #added > 0 or #removed > 0 then
       local lines = {}
       if #added > 0 then
@@ -239,10 +239,14 @@ function M.setup()
         end
       end
 
-      llm_ctx:update_files_with_buffer()
-      llm_ctx:update_files()
-
-      vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
+      -- Use new optimized update method
+      if llm_ctx.profile_manager:update_profile_with_file_lists(current_profile, added, removed) then
+        -- Only run update_files once at the end
+        llm_ctx:update_files()
+        vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
+      else
+        vim.notify("Failed to update profile", vim.log.levels.ERROR)
+      end
     else
       vim.notify("Context group is in sync with current profile", vim.log.levels.INFO)
     end

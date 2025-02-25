@@ -1,6 +1,6 @@
 -- lua/spec/context-groups/utils/toml_spec.lua
 
-local TOML = require("context-groups.utils.toml")
+local TOML = require("context-groups.utils").TOML
 local assert = require("luassert")
 
 describe("TOML encoder", function()

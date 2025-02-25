@@ -121,18 +121,18 @@ end
 function M.sync_llm_context()
   local llm_ctx = M.get_llm_context()
   local current_profile = llm_ctx:get_current_profile()
-  
+
   if not current_profile then
     vim.notify("No active profile", vim.log.levels.WARN)
     return false
   end
-  
+
   local success = llm_ctx:update_profile_with_buffers(current_profile)
   if success then
     llm_ctx:update_files()
     return true
   end
-  
+
   return false
 end
 

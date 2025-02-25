@@ -1,4 +1,8 @@
--- lua/context-groups/llm_context/profile.lua
+-- lua/context-groups/llm/init.lua
+-- Consolidated LLM integration functionality
+
+local utils = require("context-groups.utils")
+local core = require("context-groups.core")
 
 ---@class Profile
 ---@field gitignores ProfileGitignores Gitignore patterns
@@ -21,6 +25,17 @@
 ---@field full_files string[] Files to include in full content
 ---@field outline_files string[] Files to include in outlines
 
+---@class LLMContext
+---@field private root string Project root directory
+---@field profile_manager ProfileManager Profile manager instance
+local LLMContext = {}
+LLMContext.__index = LLMContext
+
+-- Constants
+local CONFIG_DIR = ".llm-context"
+local CONFIG_FILE = "config.toml"
+
+-- ProfileManager implementation (from llm_context/profile.lua)
 ---@class ProfileManager
 ---@field private config_path string Path to config file
 ---@field private ctx_file string Path to current context file
@@ -28,45 +43,6 @@
 ---@field private current_profile string? Current active profile
 local ProfileManager = {}
 ProfileManager.__index = ProfileManager
-
-local TOML = require("context-groups.utils.toml")
-
--- Get all open buffer file paths
----@return string[] file_paths
-function ProfileManager:get_open_buffer_files()
-  local files = {}
-  local seen = {}
-  local core = require("context-groups.core")
-
-  -- 获取当前打开的文件
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    -- 只包含正常的文件缓冲区
-    if vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buftype == "" then
-      local path = vim.api.nvim_buf_get_name(bufnr)
-      if path and path ~= "" and vim.fn.filereadable(path) == 1 then
-        -- 转换为相对路径
-        local root_path = vim.fn.fnamemodify(self.config_path, ":h:h")
-        path = vim.fn.fnamemodify(path, ":p")
-        if vim.startswith(path, root_path) then
-          path = path:sub(#root_path + 2) -- +2 to remove the trailing slash
-          seen[path] = true
-          table.insert(files, path)
-
-          -- 获取这个 buffer 的上下文组文件
-          local context_files = core.get_context_files(bufnr, { relative = true })
-          for _, context_file in ipairs(context_files) do
-            if not seen[context_file] then
-              seen[context_file] = true
-              table.insert(files, context_file)
-            end
-          end
-        end
-      end
-    end
-  end
-
-  return files
-end
 
 -- Create new ProfileManager instance
 ---@param root string Project root directory
@@ -104,13 +80,12 @@ function ProfileManager:read_config()
     return nil
   end
 
-  local content = vim.fn.readfile(self.config_path)
+  local content = utils.read_file_content(self.config_path)
   if not content then
     return nil
   end
 
-  local toml_content = table.concat(content, "\n")
-  local ok, parsed = pcall(TOML.parse, toml_content)
+  local ok, parsed = pcall(utils.TOML.parse, content)
   if not ok then
     vim.notify("Failed to parse TOML config: " .. tostring(parsed), vim.log.levels.ERROR)
     return nil
@@ -122,9 +97,8 @@ end
 ---@param config table Configuration to write
 ---@return boolean success
 function ProfileManager:write_config(config)
-  local encoded = TOML.encode(config)
-  local lines = vim.split(encoded, "\n")
-  return vim.fn.writefile(lines, self.config_path) == 0
+  local encoded = utils.TOML.encode(config)
+  return utils.write_file_content(self.config_path, encoded)
 end
 
 -- Get available profiles
@@ -228,6 +202,43 @@ function ProfileManager:create_profile(name, opts)
   return self:switch_profile(name)
 end
 
+-- Get all open buffer file paths
+---@return string[] file_paths
+function ProfileManager:get_open_buffer_files()
+  local files = {}
+  local seen = {}
+  local context_core = require("context-groups.core")
+
+  -- Get currently open files
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    -- Only include normal file buffers
+    if vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buftype == "" then
+      local path = vim.api.nvim_buf_get_name(bufnr)
+      if path and path ~= "" and vim.fn.filereadable(path) == 1 then
+        -- Convert to relative path
+        local root_path = vim.fn.fnamemodify(self.config_path, ":h:h")
+        path = vim.fn.fnamemodify(path, ":p")
+        if vim.startswith(path, root_path) then
+          path = path:sub(#root_path + 2) -- +2 to remove the trailing slash
+          seen[path] = true
+          table.insert(files, path)
+
+          -- Get context group files for this buffer
+          local context_files = context_core.get_context_files(bufnr, { relative = true })
+          for _, context_file in ipairs(context_files) do
+            if not seen[context_file] then
+              seen[context_file] = true
+              table.insert(files, context_file)
+            end
+          end
+        end
+      end
+    end
+  end
+
+  return files
+end
+
 -- Create profile from current context group
 ---@param name string Profile name
 ---@param context_files string[] Current context files
@@ -285,13 +296,12 @@ function ProfileManager:get_context_files()
     return {}
   end
 
-  local content = vim.fn.readfile(self.ctx_file)
+  local content = utils.read_file_content(self.ctx_file)
   if not content then
     return {}
   end
 
-  local toml_content = table.concat(content, "\n")
-  local ok, parsed = pcall(TOML.parse, toml_content)
+  local ok, parsed = pcall(utils.TOML.parse, content)
   if not ok or not parsed then
     vim.notify("Failed to parse context file", vim.log.levels.ERROR)
     return {}
@@ -395,7 +405,7 @@ function ProfileManager:update_profile_with_file_lists(profile_name, added, remo
   return self:write_config(config)
 end
 
--- Update profile with buffer files (refactored to use update_profile_with_file_lists)
+-- Update profile with buffer files
 ---@param profile_name string? Profile name
 ---@return boolean success
 function ProfileManager:update_profile_with_buffers(profile_name)
@@ -431,7 +441,7 @@ function ProfileManager:update_profile_with_buffers(profile_name)
     end
   end
 
-  -- Find files to remove (files that exist in current but not in buffer_files)
+  -- Find files to remove
   for _, file in ipairs(current_files) do
     if not vim.tbl_contains(buffer_files, file) then
       table.insert(removed, file)
@@ -442,4 +452,108 @@ function ProfileManager:update_profile_with_buffers(profile_name)
   return self:update_profile_with_file_lists(profile_name, added, removed)
 end
 
-return ProfileManager
+---Create new LLMContext instance for a project
+---@param root string Project root directory
+---@return LLMContext
+function LLMContext.new(root)
+  local self = setmetatable({}, LLMContext)
+  self.root = root
+  self.profile_manager = ProfileManager.new(root)
+  return self
+end
+
+---Check if llm-context is initialized in the project
+---@return boolean
+function LLMContext:is_initialized()
+  return vim.fn.filereadable(self.root .. "/" .. CONFIG_DIR .. "/" .. CONFIG_FILE) == 1
+end
+
+---Initialize llm-context in the project
+---@return boolean success
+function LLMContext:initialize()
+  -- Check if already initialized
+  if self:is_initialized() then
+    return true
+  end
+
+  -- Create .llm-context directory
+  local config_dir = self.root .. "/" .. CONFIG_DIR
+  if vim.fn.mkdir(config_dir, "p") ~= 1 then
+    vim.notify("Failed to create llm-context config directory", vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Run lc-init
+  local init_cmd = "cd " .. vim.fn.shellescape(self.root) .. " && lc-init"
+  local init_result = vim.fn.system(init_cmd)
+
+  if vim.v.shell_error ~= 0 then
+    vim.notify("Failed to initialize llm-context: " .. init_result, vim.log.levels.ERROR)
+    return false
+  end
+
+  return true
+end
+
+---Get available profiles
+---@return string[] profile_names List of profile names
+function LLMContext:get_profiles()
+  return self.profile_manager:get_profiles()
+end
+
+---Get current active profile
+---@return string? profile_name Current profile name
+function LLMContext:get_current_profile()
+  return self.profile_manager:get_current_profile()
+end
+
+---Switch to profile
+---@param profile string Profile name
+---@return boolean success
+function LLMContext:switch_profile(profile)
+  return self.profile_manager:switch_profile(profile)
+end
+
+---Create new profile
+---@param name string Profile name
+---@param opts table Profile options
+---@return boolean success
+function LLMContext:create_profile(name, opts)
+  return self.profile_manager:create_profile(name, opts)
+end
+
+---Create profile from current context group
+---@param name string Profile name
+---@param context_files string[] Current context files
+---@return boolean success
+function LLMContext:create_profile_from_context(name, context_files)
+  return self.profile_manager:create_profile_from_context(name, context_files)
+end
+
+---Update files in current context
+---@return boolean success
+function LLMContext:update_files()
+  return self.profile_manager:update_files()
+end
+
+---Update profile with current buffers
+---@param profile string? Profile name
+---@return boolean success
+function LLMContext:update_profile_with_buffers(profile)
+  return self.profile_manager:update_profile_with_buffers(profile)
+end
+
+---Get current context files
+---@return string[] files List of file paths
+function LLMContext:get_context_files()
+  return self.profile_manager:get_context_files()
+end
+
+---Get open buffer files
+---@return string[] files List of file paths
+function LLMContext:get_open_buffer_files()
+  return self.profile_manager:get_open_buffer_files()
+end
+
+-- Export the LLMContext class
+return LLMContext

@@ -1,24 +1,29 @@
+-- lua/context-groups/language/go.lua
+-- Go language handler implementation
+
+local config = require("context-groups.config")
+
 local M = {}
 
--- 测试用接口
+-- Test interface
 M.test = {}
 
--- Go 路径缓存
+-- Go path cache
 local path_cache = {
-  -- GOROOT 路径 (标准库位置)
+  -- GOROOT path (standard library location)
   stdlib = nil,
-  -- GOPATH 路径
+  -- GOPATH path
   gopath = nil,
-  -- go.mod 缓存
+  -- go.mod cache
   mod_cache = {},
-  -- 包缓存
+  -- package cache
   pkg_cache = {},
 }
 
--- 初始化 Go 环境路径
+-- Initialize Go environment paths
 local function init_paths()
   if not path_cache.stdlib then
-    -- 获取 GOROOT
+    -- Get GOROOT
     local goroot = vim.fn.systemlist("go env GOROOT")
     if goroot and goroot[1] then
       path_cache.stdlib = goroot[1]
@@ -26,7 +31,7 @@ local function init_paths()
   end
 
   if not path_cache.gopath then
-    -- 获取 GOPATH
+    -- Get GOPATH
     local gopath = vim.fn.systemlist("go env GOPATH")
     if gopath and gopath[1] then
       path_cache.gopath = gopath[1]
@@ -34,21 +39,21 @@ local function init_paths()
   end
 end
 
--- 添加清除缓存的测试函数
+-- Add cache clearing test function
 M.test.clear_cache = function()
   path_cache.mod_cache = {}
 end
 
--- 解析 go.mod 文件
----@param file_path string mod 文件路径
----@return table? mod_info 模块信息
+-- Parse go.mod file
+---@param file_path string mod file path
+---@return table? mod_info Module information
 local function parse_go_mod(file_path)
-  -- 检查缓存
+  -- Check cache
   if path_cache.mod_cache[file_path] then
     return path_cache.mod_cache[file_path]
   end
 
-  -- 读取文件内容
+  -- Read file content
   local content = vim.fn.readfile(file_path)
   if not content or #content == 0 then
     return {
@@ -58,26 +63,26 @@ local function parse_go_mod(file_path)
     }
   end
 
-  -- 用于存储解析结果
+  -- Storage for parsing results
   local mod_info = {
     module = nil,
     requires = {},
     replaces = {},
   }
 
-  -- 当前解析状态
+  -- Current parsing state
   local state = {
     in_require_block = false,
     in_replace_block = false,
   }
 
-  -- 预处理：移除所有注释（包括行内注释和多行注释）
+  -- Preprocess: remove all comments (including inline and multi-line)
   local function remove_comments(line)
-    -- 移除 // 注释
+    -- Remove // comments
     line = line:gsub("//.*$", "")
-    -- 移除 /* */ 注释（单行情况）
+    -- Remove /* */ comments (single line case)
     line = line:gsub("/%*.-%*/", "")
-    -- 清理空白字符
+    -- Clean whitespace
     line = line:gsub("^%s+", ""):gsub("%s+$", "")
     return line
   end
@@ -91,7 +96,7 @@ local function parse_go_mod(file_path)
   end
 
   local function parse_require_line(line)
-    -- 匹配 require x.y.z v1.2.3 格式
+    -- Match require x.y.z v1.2.3 format
     local mod, ver = line:match("^([^%s]+)%s+[\"']?([^%s\"']+)[\"']?$")
     if mod and ver then
       return mod:gsub("[\"']", ""), ver
@@ -100,7 +105,7 @@ local function parse_go_mod(file_path)
   end
 
   local function parse_replace_line(line)
-    -- 匹配 x.y.z => a.b.c v1.2.3 格式
+    -- Match x.y.z => a.b.c v1.2.3 format
     local old, new = line:match("^([^%s]+)%s*=>%s*([^%s].+)$")
     if old and new then
       return old:gsub("[\"']", ""), new:gsub("[\"']", "")
@@ -111,7 +116,7 @@ local function parse_go_mod(file_path)
   for _, raw_line in ipairs(content) do
     local line = remove_comments(raw_line)
     if line ~= "" then
-      -- 处理块的开始和结束
+      -- Handle block start and end
       if line == "require (" then
         state.in_require_block = true
       elseif line == "replace (" then
@@ -119,28 +124,28 @@ local function parse_go_mod(file_path)
       elseif line == ")" then
         state.in_require_block = false
         state.in_replace_block = false
-      -- 处理模块声明
+      -- Handle module declaration
       elseif line:match("^module%s+") then
         mod_info.module = parse_module_line(line)
-      -- 处理单行 require
+      -- Handle single-line require
       elseif line:match("^require%s+") and not line:match("^require%s+%(") then
         local mod, ver = parse_require_line(line:gsub("^require%s+", ""))
         if mod and ver then
           mod_info.requires[mod] = ver
         end
-      -- 处理块内 require
+      -- Handle block require
       elseif state.in_require_block then
         local mod, ver = parse_require_line(line)
         if mod and ver then
           mod_info.requires[mod] = ver
         end
-      -- 处理单行 replace
+      -- Handle single-line replace
       elseif line:match("^replace%s+") then
         local old, new = parse_replace_line(line:gsub("^replace%s+", ""))
         if old and new then
           mod_info.replaces[old] = new
         end
-      -- 处理块内 replace
+      -- Handle block replace
       elseif state.in_replace_block then
         local old, new = parse_replace_line(line)
         if old and new then
@@ -150,17 +155,17 @@ local function parse_go_mod(file_path)
     end
   end
 
-  -- 缓存结果
+  -- Cache result
   path_cache.mod_cache[file_path] = mod_info
   return mod_info
 end
 
--- 导出用于测试的函数
+-- Export for testing
 M.test.parse_go_mod = parse_go_mod
 
--- 获取最近的 go.mod 文件
----@param start_path string 开始搜索的路径
----@return string? mod_path go.mod 路径
+-- Find nearest go.mod file
+---@param start_path string Start search path
+---@return string? mod_path go.mod path
 local function find_nearest_go_mod(start_path)
   local current = start_path
   while current ~= "/" do
@@ -173,22 +178,22 @@ local function find_nearest_go_mod(start_path)
   return nil
 end
 
--- 解析导入语句
----@param bufnr number buffer 编号
----@return table[] imports 导入信息列表
+-- Parse import statements
+---@param bufnr number Buffer number
+---@return table[] imports Import information list
 function M.test.parse_imports(bufnr)
   local imports = {}
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
   local in_import_block = false
   for lnum, line in ipairs(lines) do
-    -- 移除注释
+    -- Remove comments
     line = line:gsub("//.*$", "")
     line = line:gsub("/%*.-%*/", "")
 
-    -- 导入语句匹配
+    -- Match imports
     if not in_import_block then
-      -- 单行导入
+      -- Single-line import
       local single_import = line:match('^%s*import%s+"([^"]+)"')
       if single_import then
         table.insert(imports, {
@@ -198,19 +203,19 @@ function M.test.parse_imports(bufnr)
         })
       end
 
-      -- 导入块开始
+      -- Import block start
       if line:match("^%s*import%s+%(") then
         in_import_block = true
       end
     else
-      -- 导入块结束
+      -- Import block end
       if line:match("^%s*%)") then
         in_import_block = false
       else
-        -- 块内导入
+        -- Block import
         local name, path = line:match('^%s*([%w_]+)%s+"([^"]+)"')
         if path then
-          -- 命名导入
+          -- Named import
           table.insert(imports, {
             package = path,
             alias = name ~= "_" and name or nil,
@@ -218,7 +223,7 @@ function M.test.parse_imports(bufnr)
             character = line:find('"'),
           })
         else
-          -- 普通导入
+          -- Regular import
           path = line:match('^%s*"([^"]+)"')
           if path then
             table.insert(imports, {
@@ -235,8 +240,8 @@ function M.test.parse_imports(bufnr)
   return imports
 end
 
--- 检查是否为标准库包
----@param pkg_path string 包路径
+-- Check if package is from standard library
+---@param pkg_path string Package path
 ---@return boolean
 local function is_stdlib(pkg_path)
   if not path_cache.stdlib or pkg_path:match("^[%w%.%-_]+/") then
@@ -248,21 +253,21 @@ local function is_stdlib(pkg_path)
     return false
   end
 
-  -- 检查标准库路径
+  -- Check standard library path
   local std_path = path_cache.stdlib .. "/src/" .. pkg_name
   return vim.fn.isdirectory(std_path) == 1
 end
 
--- 检查是否为外部依赖
----@param pkg_path string 包路径
----@param mod_info table go.mod 信息
+-- Check if package is from external dependency
+---@param pkg_path string Package path
+---@param mod_info table go.mod information
 ---@return boolean
 local function is_external(pkg_path, mod_info)
   if not mod_info then
     return false
   end
 
-  -- 检查是否匹配任何外部依赖
+  -- Check if matches any external dependency
   for dep_path, _ in pairs(mod_info.requires) do
     if vim.startswith(pkg_path, dep_path) then
       return true
@@ -272,16 +277,16 @@ local function is_external(pkg_path, mod_info)
   return false
 end
 
--- 解析导入包的具体位置
----@param pkg_path string 包路径
----@param from_file string 源文件路径
----@return string? resolved_path 解析后的文件路径
+-- Resolve package to file path
+---@param pkg_path string Package path
+---@param from_file string Source file path
+---@return string? resolved_path Resolved file path
 local function resolve_package(pkg_path, from_file)
-  -- 如果是标准库
+  -- If standard library
   if is_stdlib(pkg_path) then
     local std_path = path_cache.stdlib .. "/src/" .. pkg_path
     if vim.fn.isdirectory(std_path) == 1 then
-      -- 返回包目录下的主文件
+      -- Return main file in package
       local main_file = std_path .. "/" .. vim.fn.fnamemodify(pkg_path, ":t") .. ".go"
       if vim.fn.filereadable(main_file) == 1 then
         return main_file
@@ -290,7 +295,7 @@ local function resolve_package(pkg_path, from_file)
     return nil
   end
 
-  -- 查找项目的 go.mod
+  -- Find project's go.mod
   local mod_path = find_nearest_go_mod(from_file)
   if not mod_path then
     return nil
@@ -301,12 +306,12 @@ local function resolve_package(pkg_path, from_file)
     return nil
   end
 
-  -- 如果是项目内部包
+  -- If internal package
   if vim.startswith(pkg_path, mod_info.module) then
     local rel_path = pkg_path:sub(#mod_info.module + 2)
     local pkg_dir = vim.fn.fnamemodify(mod_path, ":h") .. "/" .. rel_path
     if vim.fn.isdirectory(pkg_dir) == 1 then
-      -- 返回包目录下的主文件
+      -- Return main file in package
       local main_file = pkg_dir .. "/" .. vim.fn.fnamemodify(rel_path, ":t") .. ".go"
       if vim.fn.filereadable(main_file) == 1 then
         return main_file
@@ -315,13 +320,13 @@ local function resolve_package(pkg_path, from_file)
     return nil
   end
 
-  -- 如果是外部依赖
+  -- If external dependency
   local gopath = path_cache.gopath
   if gopath then
-    -- 检查 GOPATH
+    -- Check GOPATH
     local pkg_dir = gopath .. "/pkg/mod/" .. pkg_path
     if vim.fn.isdirectory(pkg_dir) == 1 then
-      -- 返回包目录下的主文件
+      -- Return main file in package
       local main_file = pkg_dir .. "/" .. vim.fn.fnamemodify(pkg_path, ":t") .. ".go"
       if vim.fn.filereadable(main_file) == 1 then
         return main_file
@@ -332,7 +337,7 @@ local function resolve_package(pkg_path, from_file)
   return nil
 end
 
--- 获取导入的文件
+-- Get imported files
 ---@param bufnr number Buffer number
 ---@return ImportedFile[]
 local function get_imports(bufnr)
@@ -340,14 +345,13 @@ local function get_imports(bufnr)
   local file_path = vim.api.nvim_buf_get_name(bufnr)
   local results = {}
 
-  -- 获取 go.mod 信息
+  -- Get go.mod information
   local mod_path = find_nearest_go_mod(file_path)
   local mod_info = mod_path and parse_go_mod(mod_path)
 
   for _, import in ipairs(imports) do
     local pkg_path = import.package
     local resolved_path = resolve_package(pkg_path, file_path)
-    -- vim.notify(string.format("Resolved %s to %s", pkg_path, resolved_path))
 
     if resolved_path then
       table.insert(results, {
@@ -378,12 +382,12 @@ end
 
 M.test.get_imports = get_imports
 
--- 注册 Go LSP 处理器
+-- Setup handler
 function M.setup()
-  -- 初始化路径
+  -- Initialize paths
   init_paths()
 
-  -- 注册处理器
+  -- Register handler
   require("context-groups.lsp").register_handler("go", {
     get_imports = get_imports,
     is_stdlib = is_stdlib,

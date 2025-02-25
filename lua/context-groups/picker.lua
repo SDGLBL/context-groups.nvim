@@ -1,4 +1,5 @@
--- lua/context-groups/ui/picker.lua
+-- lua/context-groups/picker.lua
+-- Enhanced telescope integration, refactored from ui/picker.lua
 
 local config = require("context-groups.config")
 local core = require("context-groups.core")
@@ -21,7 +22,13 @@ local function create_previewer()
   return previewers.new_buffer_previewer({
     title = "File Preview",
     define_preview = function(self, entry)
-      local lines = vim.fn.readfile(entry.path)
+      local content = require("context-groups.utils").read_file_content(entry.path)
+      if not content then
+        vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {"File not readable"})
+        return
+      end
+      
+      local lines = vim.split(content, "\n")
       local max_lines = config.get().max_preview_lines or 500
 
       -- Limit number of preview lines
@@ -39,6 +46,18 @@ local function create_previewer()
       end
     end,
   })
+end
+
+-- Refresh picker while preserving mode
+local function refresh_picker(prompt_bufnr, current_mode, picker_fn)
+  actions.close(prompt_bufnr)
+  picker_fn()
+  -- Delay mode switch to ensure picker is fully initialized
+  vim.schedule(function()
+    if current_mode == "i" then
+      vim.cmd("startinsert")
+    end
+  end)
 end
 
 -- Show picker for adding files to context group
@@ -97,18 +116,6 @@ function M.show_file_picker()
     :find()
 end
 
--- Function to refresh picker while preserving mode
-local function refresh_picker(prompt_bufnr, current_mode)
-  actions.close(prompt_bufnr)
-  M.show_context_group()
-  -- 延迟一下执行模式切换，确保 picker 已完全初始化
-  vim.schedule(function()
-    if current_mode == "i" then
-      vim.cmd("startinsert")
-    end
-  end)
-end
-
 -- Show current context group
 function M.show_context_group()
   -- Store the source buffer number
@@ -140,9 +147,9 @@ function M.show_context_group()
             local success = core.remove_context_file(selection.value, source_bufnr)
             if success then
               vim.notify(string.format("Removed %s from context group", selection.display))
-              -- 获取当前模式
+              -- Get current mode
               local current_mode = vim.api.nvim_get_mode().mode
-              refresh_picker(prompt_bufnr, current_mode)
+              refresh_picker(prompt_bufnr, current_mode, M.show_context_group)
             end
           end
         end)
@@ -177,7 +184,6 @@ function M.show_imports_picker()
   source_bufnr = vim.api.nvim_get_current_buf()
 
   local imported_files = lsp.get_imported_files(source_bufnr)
-  -- vim.notify(string.format("imported_files: %s", vim.inspect(imported_files)))
 
   -- Create custom entry maker for import display
   local function make_import_entry(entry)
@@ -214,7 +220,13 @@ function M.show_imports_picker()
 
       -- Show file content if available
       if vim.fn.filereadable(entry.path) == 1 then
-        local lines = vim.fn.readfile(entry.path)
+        local content = require("context-groups.utils").read_file_content(entry.path)
+        if not content then
+          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {"File not readable"})
+          return
+        end
+        
+        local lines = vim.split(content, "\n")
         local max_lines = config.get().max_preview_lines or 500
 
         if #lines > max_lines then
@@ -289,7 +301,7 @@ function M.show_imports_picker()
           config.update_import_prefs(prefs)
 
           local current_mode = vim.api.nvim_get_mode().mode
-          refresh_picker(prompt_bufnr, current_mode)
+          refresh_picker(prompt_bufnr, current_mode, M.show_imports_picker)
         end)
 
         -- Toggle external deps visibility
@@ -299,7 +311,7 @@ function M.show_imports_picker()
           config.update_import_prefs(prefs)
 
           local current_mode = vim.api.nvim_get_mode().mode
-          refresh_picker(prompt_bufnr, current_mode)
+          refresh_picker(prompt_bufnr, current_mode, M.show_imports_picker)
         end)
 
         return true
@@ -310,8 +322,8 @@ end
 
 -- Show LLM Context profile picker
 function M.show_profile_picker()
-  local project = require("context-groups.core.project")
-  local LLMContext = require("context-groups.llm_context")
+  local LLMContext = require("context-groups.llm")
+  local project = require("context-groups.core")
 
   -- Get LLM Context instance
   local root = project.find_root(vim.fn.expand("%:p"))

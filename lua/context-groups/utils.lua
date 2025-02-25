@@ -1,6 +1,57 @@
--- lua/context-groups/utils/toml.lua
+-- lua/context-groups/utils.lua
+-- Consolidates utility functions, including TOML parsing from previous utils/toml.lua
 
-local TOML = {
+local Utils = {}
+
+-- File system utilities
+---@param filepath string File path
+---@return string|nil content
+function Utils.read_file_content(filepath)
+  if not filepath or filepath == "" then
+    return nil
+  end
+
+  -- Check if file exists and is readable
+  if vim.fn.filereadable(filepath) ~= 1 then
+    return nil
+  end
+
+  -- Read file content
+  local content = table.concat(vim.fn.readfile(filepath), "\n")
+  if content == "" then
+    return nil
+  end
+
+  return content
+end
+
+---@param filepath string File path
+---@param content string Content to write
+---@return boolean success
+function Utils.write_file_content(filepath, content)
+  local lines = vim.split(content, "\n")
+  return vim.fn.writefile(lines, filepath) == 0
+end
+
+-- Path utilities
+---@param path string File path
+---@return string relative_path
+function Utils.get_relative_path(path, root)
+  -- Ensure path is absolute
+  local abs_path = vim.fn.fnamemodify(path, ":p")
+
+  -- If path starts with root, remove root part
+  if root and vim.startswith(abs_path, root) then
+    -- Remove root dir and leading slash
+    return abs_path:sub(#root + 2)
+  end
+
+  -- If path not in project, return original path
+  return vim.fn.fnamemodify(path, ":~:.")
+end
+
+-- TOML utilities
+Utils.TOML = {
   version = 0.40,
   strict = true,
 }
@@ -174,7 +225,7 @@ end
 -- Parse functions
 local function parse(toml, options)
   options = options or {}
-  local strict = (options.strict ~= nil and options.strict or TOML.strict)
+  local strict = (options.strict ~= nil and options.strict or Utils.TOML.strict)
 
   local ws = "[\009\032]"
   local nl = "[\10\13\10]"
@@ -458,7 +509,7 @@ local function parse(toml, options)
   return out
 end
 
-TOML.encode = encode
-TOML.parse = parse
+Utils.TOML.encode = encode
+Utils.TOML.parse = parse
 
-return TOML
+return Utils

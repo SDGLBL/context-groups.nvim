@@ -1,4 +1,5 @@
--- lua/context-groups/lsp/python.lua
+-- lua/context-groups/language/python.lua
+-- Python language handler implementation
 
 local config = require("context-groups.config")
 
@@ -170,11 +171,12 @@ local function get_imports(bufnr)
   return results
 end
 
--- Register Python LSP handler
+-- Setup handler
 function M.setup()
   -- Initialize paths when setting up
   init_paths()
 
+  -- Register handler
   require("context-groups.lsp").register_handler("python", {
     get_imports = get_imports,
     is_stdlib = is_stdlib,

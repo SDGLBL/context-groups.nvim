@@ -1,6 +1,8 @@
--- lua/context-groups/lsp/init.lua
+-- lua/context-groups/lsp.lua
+-- Consolidated LSP functionality
 
 local config = require("context-groups.config")
+local language_registry = require("context-groups.language")
 
 ---@class ImportedFile
 ---@field path string Complete file path
@@ -20,24 +22,13 @@ local config = require("context-groups.config")
 
 local M = {}
 
--- Language handlers registry
----@type table<string, LSPHandler>
-local handlers = {}
-
--- Register handler for a language
----@param lang string Language identifier
----@param handler LSPHandler Handler implementation
-function M.register_handler(lang, handler)
-  handlers[lang] = handler
-end
-
 -- Get handler for current buffer
 ---@param bufnr? number Buffer number (nil for current buffer)
 ---@return LSPHandler?
 local function get_handler(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local ft = vim.bo[bufnr].filetype
-  return handlers[ft]
+  return language_registry.get_handler(ft)
 end
 
 -- Get all imports for current buffer
@@ -90,16 +81,17 @@ function M.resolve_import(import_path, from_file)
   return handler.resolve_import(import_path, from_file)
 end
 
--- Initialize LSP handlers
-local function init()
-  -- Load language specific handlers
-  require("context-groups.lsp.go").setup()
-  require("context-groups.lsp.python").setup()
+-- Register handler convenience function
+---@param lang string Language identifier
+---@param handler LSPHandler Handler implementation
+function M.register_handler(lang, handler)
+  language_registry.register(lang, handler)
 end
 
 -- Setup LSP integration
 function M.setup()
-  init()
+  -- Initialize language handlers
+  language_registry.init()
 
   -- Set up LSP handlers for import resolution
   vim.lsp.handlers["textDocument/definition"] = function(err, result, ctx, config_)

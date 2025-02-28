@@ -104,7 +104,7 @@ require('context-groups').setup({
 
 ## LLM Context Integration
 
-Context Groups integrates with [LLM Context](https://github.com/cyberchitta/llm-context.py/) to provide advanced context management for LLMs.
+Context Groups integrates with [LLM Context](https://github.com/cyberchitta/llm-context.py/) to provide advanced context management for LLMs. The plugin now supports the latest YAML configuration format along with backward compatibility for TOML.
 
 ### Setup
 
@@ -127,6 +127,7 @@ Context Groups integrates with [LLM Context](https://github.com/cyberchitta/llm-
 
 ## Recent Updates
 
+- **February 2025**: Added support for YAML configuration in LLM Context integration. See [YAML Migration Guide](docs/yaml-migration.md) for details.
 - **February 2025**: Major refactoring to improve code organization and maintainability. See [REFACTORING.md](REFACTORING.md) for details.
 
 ## License

@@ -14,21 +14,21 @@ describe("LLMContext", function()
 
     -- Create stub files for testing
     vim.fn.writefile({
-      '__info__ = "Test config file"',
+      "__info__: 'Test config file'",
       "",
-      "[templates]",
-      'context = "lc-context.j2"',
-      'files = "lc-files.j2"',
+      "templates:",
+      "  context: lc-context.j2",
+      "  files: lc-files.j2",
       "",
-      "[profiles.code]",
-      "[profiles.code.gitignores]",
-      "full_files = [",
-      '  ".git",',
-      '  ".gitignore",',
-      "]",
-      "[profiles.code.settings]",
-      "no_media = true",
-    }, test_root .. "/.llm-context/config.toml")
+      "profiles:",
+      "  code:",
+      "    gitignores:",
+      "      full_files:",
+      "      - .git",
+      "      - .gitignore",
+      "    settings:",
+      "      no_media: true",
+    }, test_root .. "/.llm-context/config.yaml")
   end)
 
   after_each(function()
@@ -40,7 +40,10 @@ describe("LLMContext", function()
     assert.is_true(llm_context:is_initialized())
 
     -- Test with missing config
-    vim.fn.system("rm " .. test_root .. "/.llm-context/config.toml")
+    assert.is_true(llm_context:is_initialized())
+    
+    -- Now remove the config and check again
+    vim.fn.system("rm " .. test_root .. "/.llm-context/config.yaml")
     assert.is_false(llm_context:is_initialized())
   end)
 

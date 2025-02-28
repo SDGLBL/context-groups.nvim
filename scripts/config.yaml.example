@@ -1,0 +1,83 @@
+# LLM Context YAML Configuration Example
+
+# Template definitions
+templates:
+  context: lc-context.j2
+  files: lc-files.j2
+  highlights: lc-highlights.j2
+
+# Profile definitions
+profiles:
+  # Default code profile
+  code:
+    gitignores:
+      full_files:
+        - .git
+        - .gitignore
+        - .llm-context/
+        - "*.lock"
+        - package-lock.json
+        - yarn.lock
+        - pnpm-lock.yaml
+        - go.sum
+        - elm-stuff
+      outline_files:
+        - .git
+        - .gitignore
+        - .llm-context/
+        - "*.lock"
+        - package-lock.json
+        - yarn.lock
+    settings:
+      no_media: true
+      with_user_notes: false
+    only-include:
+      full_files:
+        - "**/*"
+      outline_files:
+        - "**/*"
+
+  # Code profile with prompt
+  code-prompt:
+    base: code
+    prompt: lc-prompt.md
+    settings:
+      with_prompt: true
+
+  # Documentation profile
+  docs:
+    gitignores:
+      full_files:
+        - .git
+        - .gitignore
+        - .llm-context/
+        - node_modules/
+        - dist/
+      outline_files:
+        - .git
+        - .gitignore
+        - .llm-context/
+    settings:
+      no_media: true
+      with_user_notes: true
+    only-include:
+      full_files:
+        - "**/*.md"
+        - "**/*.txt"
+        - "**/*.rst"
+        - "README*"
+        - "LICENSE*"
+      outline_files:
+        - "**/*.md"
+        - "**/*.txt"
+
+  # Profile with file output
+  code-file:
+    base: code
+    settings:
+      no_media: true
+      with_user_notes: false
+      context_file: project-context.md.tmp
+
+# Special info and metadata (optional)
+__info__: 'This project uses llm-context. For more information, visit: https://github.com/cyberchitta/llm-context.py'

@@ -33,7 +33,7 @@ LLMContext.__index = LLMContext
 
 -- Constants
 local CONFIG_DIR = ".llm-context"
-local CONFIG_FILE = "config.toml"
+local CONFIG_FILE = "config.yaml" -- Default config format
 
 -- ProfileManager implementation (from llm_context/profile.lua)
 ---@class ProfileManager
@@ -49,8 +49,10 @@ ProfileManager.__index = ProfileManager
 ---@return ProfileManager
 function ProfileManager.new(root)
   local self = setmetatable({}, ProfileManager)
-  self.config_path = root .. "/.llm-context/config.toml"
-  self.ctx_file = root .. "/.llm-context/curr_ctx.toml"
+  self.root = root
+  self.config_dir = root .. "/" .. CONFIG_DIR
+  self.config_path = self.config_dir .. "/" .. CONFIG_FILE
+  self.ctx_file = self.config_dir .. "/curr_ctx.toml" -- Context state file
   self.profiles = {}
   self.current_profile = nil
 
@@ -73,7 +75,7 @@ function ProfileManager:is_initialized()
   return vim.fn.filereadable(self.config_path) == 1
 end
 
--- Read and parse TOML configuration
+-- Read and parse configuration (YAML or TOML)
 ---@return table? config
 function ProfileManager:read_config()
   if not self:is_initialized() then
@@ -85,21 +87,25 @@ function ProfileManager:read_config()
     return nil
   end
 
-  local ok, parsed = pcall(utils.TOML.parse, content)
-  if not ok then
-    vim.notify("Failed to parse TOML config: " .. tostring(parsed), vim.log.levels.ERROR)
+  -- Parse YAML
+  local parsed = utils.YAML.parse(content)
+  if not parsed then
+    vim.notify("Failed to parse YAML config", vim.log.levels.ERROR)
     return nil
   end
   return parsed
 end
 
--- Write TOML configuration
+-- Write configuration (YAML or TOML)
 ---@param config table Configuration to write
 ---@return boolean success
 function ProfileManager:write_config(config)
-  local encoded = utils.TOML.encode(config)
+  -- Encode as YAML
+  local encoded = utils.YAML.encode(config)
   return utils.write_file_content(self.config_path, encoded)
 end
+
+
 
 -- Get available profiles
 ---@return string[] profile_names
@@ -483,16 +489,85 @@ function LLMContext:initialize()
     return false
   end
 
-  -- Run lc-init
+  -- Try to run lc-init command first
   local init_cmd = "cd " .. vim.fn.shellescape(self.root) .. " && lc-init"
   local init_result = vim.fn.system(init_cmd)
 
-  if vim.v.shell_error ~= 0 then
-    vim.notify("Failed to initialize llm-context: " .. init_result, vim.log.levels.ERROR)
-    return false
+  -- Check if initialization was successful
+  if vim.v.shell_error == 0 then
+  
+    return true
+  else
+    -- Manually initialize configs with YAML format if command fails
+    vim.notify("Using fallback initialization method", vim.log.levels.WARN)
+    
+    -- Create default YAML configuration
+    local default_config = {
+      templates = {
+        context = "lc-context.j2",
+        files = "lc-files.j2",
+        highlights = "lc-highlights.j2",
+      },
+      profiles = {
+        code = {
+          gitignores = {
+            full_files = { ".git", ".gitignore", ".llm-context/", "*.lock" },
+            outline_files = { ".git", ".gitignore", ".llm-context/", "*.lock" },
+          },
+          settings = {
+            no_media = true,
+            with_user_notes = false,
+          },
+          ["only-include"] = {
+            full_files = { "**/*" },
+            outline_files = { "**/*" },
+          },
+        },
+        ["code-prompt"] = {
+          base = "code",
+          prompt = "lc-prompt.md",
+        },
+      },
+    }
+    
+    local yaml_content = utils.YAML.encode(default_config)
+    local success = utils.write_file_content(config_dir .. "/" .. CONFIG_FILE, yaml_content)
+    
+    if not success then
+      vim.notify("Failed to write YAML configuration", vim.log.levels.ERROR)
+      return false
+    end
+    
+    -- Create basic template files
+    local template_dir = config_dir .. "/templates"
+    if vim.fn.mkdir(template_dir, "p") ~= 1 then
+      vim.notify("Failed to create templates directory", vim.log.levels.ERROR)
+      return false
+    end
+    
+    -- Create default templates
+    local templates = {
+      ["lc-context.j2"] = "{% if prompt %}\n{{ prompt }}\n{% endif %}\n\n# Repository Content: **{{ project_name }}**\n\n## Structure\n{{ folder_structure_diagram }}\n\n{% if files %}\n## Files\n{% include 'lc-files.j2' %}\n{% endif %}",
+      ["lc-files.j2"] = "{% for file in files %}\n### {{ file.path }}\n```{{ file.type }}\n{{ file.content }}\n```\n{% endfor %}",
+      ["lc-highlights.j2"] = "{% for highlight in highlights %}\n### {{ highlight.path }}\n```{{ highlight.type }}\n{{ highlight.content }}\n```\n{% endfor %}",
+    }
+    
+    -- Write template files
+    for name, content in pairs(templates) do
+      if not utils.write_file_content(template_dir .. "/" .. name, content) then
+        vim.notify("Failed to write template file: " .. name, vim.log.levels.ERROR)
+      end
+    end
+    
+    -- Create basic prompt
+    local prompt_content = "## Instructions\n\nYou are helping with a project. Analyze the code provided and assist with development tasks.\n\n## Guidelines\n\n- Explain your reasoning step by step\n- Provide complete, working code solutions\n- Consider best practices and performance\n\n## Response Structure\n\n1. Summary of the codebase\n2. Analysis of the specific task or problem\n3. Solution or implementation\n4. Explanation of your approach"
+    
+    if not utils.write_file_content(config_dir .. "/lc-prompt.md", prompt_content) then
+      vim.notify("Failed to write prompt file", vim.log.levels.ERROR)
+    end
+    
+    return true
   end
-
-  return true
 end
 
 ---Get available profiles

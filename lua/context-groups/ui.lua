@@ -76,6 +76,8 @@ local commands = {
         vim.notify("Failed to initialize LLM Context", vim.log.levels.ERROR)
       end
     end,
+    
+
 
     -- List available profiles
     list_profiles = function()
@@ -273,6 +275,7 @@ function M.register_commands()
   create_command("ContextGroupInitLLM", commands.llm.init, {
     desc = "Initialize LLM Context for the project",
   })
+  
 
   create_command("ContextGroupListProfiles", commands.llm.list_profiles, {
     desc = "List available LLM Context profiles",

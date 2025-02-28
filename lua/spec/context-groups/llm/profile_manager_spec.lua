@@ -100,4 +100,181 @@ profiles:
     -- Restore original function
     profile_manager.read_config = original_read_config
   end)
+
+  it("should parse llm-context YAML format directly", function()
+    -- Use a simplified YAML in the llm-context format
+    local yaml_text = [[
+info: 'This is a test'
+profiles:
+  test:
+    settings:
+      no_media: true
+templates:
+  context: test.j2
+]]
+
+    -- Test with YAML parser directly
+    local yaml_parser = require("context-groups.utils.yaml_parser")
+    local parsed = yaml_parser.parse(yaml_text)
+
+    -- Verify basic parsing
+    assert.is_table(parsed)
+    assert.equals("This is a test", parsed.info)
+    assert.is_table(parsed.profiles)
+    assert.is_table(parsed.templates)
+  end)
+
+  it("should parse complete llm-context YAML configuration", function()
+    -- Use the complete YAML from llm-context.py but with modified info field
+    local complex_yaml = [[
+info: 'This project uses llm-context. For more information, visit: https://github.com/cyberchitta/llm-context.py
+  or https://pypi.org/project/llm-context/'
+profiles:
+  code:
+    gitignores:
+      full_files:
+      - .git
+      - .gitignore
+      - .llm-context/
+      - '*.tmp'
+      - '*.lock'
+      - package-lock.json
+      - yarn.lock
+      - pnpm-lock.yaml
+      - go.sum
+      - elm-stuff
+      - LICENSE
+      - CHANGELOG.md
+      - README.md
+      - .env
+      - .dockerignore
+      - Dockerfile
+      - docker-compose.yml
+      - '*.log'
+      - '*.svg'
+      - '*.png'
+      - '*.jpg'
+      - '*.jpeg'
+      - '*.gif'
+      - '*.ico'
+      - '*.woff'
+      - '*.woff2'
+      - '*.eot'
+      - '*.ttf'
+      - '*.map'
+      outline_files:
+      - .git
+      - .gitignore
+      - .llm-context/
+      - '*.tmp'
+      - '*.lock'
+      - package-lock.json
+      - yarn.lock
+      - pnpm-lock.yaml
+      - go.sum
+      - elm-stuff
+      - LICENSE
+      - CHANGELOG.md
+      - README.md
+      - .env
+      - .dockerignore
+      - Dockerfile
+      - docker-compose.yml
+      - '*.log'
+      - '*.svg'
+      - '*.png'
+      - '*.jpg'
+      - '*.jpeg'
+      - '*.gif'
+      - '*.ico'
+      - '*.woff'
+      - '*.woff2'
+      - '*.eot'
+      - '*.ttf'
+      - '*.map'
+    only-include:
+      full_files:
+      - '**/*'
+      outline_files:
+      - '**/*'
+    prompt: lc-prompt.md
+    settings:
+      no_media: false
+      with_prompt: false
+      with_user_notes: false
+  code-file:
+    base: code
+    description: Extends 'code' by saving the generated context to 'project-context.md.tmp'
+      for external use.
+    settings:
+      context_file: project-context.md.tmp
+  code-prompt:
+    base: code
+    description: Extends 'code' by including LLM instructions from lc-prompt.md for
+      guided interactions.
+    settings:
+      with_prompt: true
+templates:
+  context: lc-context.j2
+  context-mcp: lc-context-mcp.j2
+  files: lc-files.j2
+  highlights: lc-highlights.j2
+  prompt: lc-prompt.j2
+]]
+
+    -- Test YAML parser directly first
+    local yaml_parser = require("context-groups.utils.yaml_parser")
+    local parsed = yaml_parser.parse(complex_yaml)
+
+    -- Basic verification
+    assert.is_true(parsed ~= nil)
+    assert.is_table(parsed)
+    assert.is_string(parsed.info)
+    assert.is_table(parsed.profiles)
+    assert.is_table(parsed.templates)
+
+    -- Verify profiles
+    assert.is_table(parsed.profiles.code)
+    assert.is_table(parsed.profiles["code-file"])
+    assert.is_table(parsed.profiles["code-prompt"])
+
+    -- Verify code profile
+    local code_profile = parsed.profiles.code
+    assert.is_table(code_profile.gitignores.full_files)
+    assert.is_table(code_profile.gitignores.outline_files)
+    assert.equals(29, #code_profile.gitignores.full_files)
+    assert.equals(".git", code_profile.gitignores.full_files[1])
+    assert.equals("*.map", code_profile.gitignores.full_files[29])
+
+    -- Verify templates
+    assert.equals("lc-context.j2", parsed.templates.context)
+    assert.equals("lc-context-mcp.j2", parsed.templates["context-mcp"])
+    assert.equals("lc-files.j2", parsed.templates.files)
+    assert.equals("lc-highlights.j2", parsed.templates.highlights)
+    assert.equals("lc-prompt.j2", parsed.templates.prompt)
+
+    -- Now test with ProfileManager
+    -- Override the existing config with complex yaml
+    vim.fn.writefile(vim.split(complex_yaml, "\n"), test_root .. "/.llm-context/config.yaml")
+
+    -- Read configuration
+    local config = profile_manager:read_config()
+
+    -- Verify basic structure from profile manager
+    assert.is_table(config)
+    assert.is_string(config.info)
+    assert.is_table(config.profiles)
+    assert.is_table(config.templates)
+
+    -- Verify profile listing
+    local profiles = profile_manager:get_profiles()
+    assert.is_table(profiles)
+    assert.equals(3, #profiles)
+
+    -- Sort and verify profile names
+    table.sort(profiles)
+    assert.equals("code", profiles[1])
+    assert.equals("code-file", profiles[2])
+    assert.equals("code-prompt", profiles[3])
+  end)
 end)

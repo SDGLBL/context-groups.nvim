@@ -1,8 +1,8 @@
 -- lua/context-groups/llm/init.lua
 -- Consolidated LLM integration functionality
 
-local utils = require("context-groups.utils")
 local core = require("context-groups.core")
+local utils = require("context-groups.utils")
 
 ---@class Profile
 ---@field gitignores ProfileGitignores Gitignore patterns
@@ -104,8 +104,6 @@ function ProfileManager:write_config(config)
   local encoded = utils.YAML.encode(config)
   return utils.write_file_content(self.config_path, encoded)
 end
-
-
 
 -- Get available profiles
 ---@return string[] profile_names
@@ -495,12 +493,11 @@ function LLMContext:initialize()
 
   -- Check if initialization was successful
   if vim.v.shell_error == 0 then
-  
     return true
   else
     -- Manually initialize configs with YAML format if command fails
     vim.notify("Using fallback initialization method", vim.log.levels.WARN)
-    
+
     -- Create default YAML configuration
     local default_config = {
       templates = {
@@ -529,43 +526,44 @@ function LLMContext:initialize()
         },
       },
     }
-    
+
     local yaml_content = utils.YAML.encode(default_config)
     local success = utils.write_file_content(config_dir .. "/" .. CONFIG_FILE, yaml_content)
-    
+
     if not success then
       vim.notify("Failed to write YAML configuration", vim.log.levels.ERROR)
       return false
     end
-    
+
     -- Create basic template files
     local template_dir = config_dir .. "/templates"
     if vim.fn.mkdir(template_dir, "p") ~= 1 then
       vim.notify("Failed to create templates directory", vim.log.levels.ERROR)
       return false
     end
-    
+
     -- Create default templates
     local templates = {
       ["lc-context.j2"] = "{% if prompt %}\n{{ prompt }}\n{% endif %}\n\n# Repository Content: **{{ project_name }}**\n\n## Structure\n{{ folder_structure_diagram }}\n\n{% if files %}\n## Files\n{% include 'lc-files.j2' %}\n{% endif %}",
       ["lc-files.j2"] = "{% for file in files %}\n### {{ file.path }}\n```{{ file.type }}\n{{ file.content }}\n```\n{% endfor %}",
       ["lc-highlights.j2"] = "{% for highlight in highlights %}\n### {{ highlight.path }}\n```{{ highlight.type }}\n{{ highlight.content }}\n```\n{% endfor %}",
     }
-    
+
     -- Write template files
     for name, content in pairs(templates) do
       if not utils.write_file_content(template_dir .. "/" .. name, content) then
         vim.notify("Failed to write template file: " .. name, vim.log.levels.ERROR)
       end
     end
-    
+
     -- Create basic prompt
-    local prompt_content = "## Instructions\n\nYou are helping with a project. Analyze the code provided and assist with development tasks.\n\n## Guidelines\n\n- Explain your reasoning step by step\n- Provide complete, working code solutions\n- Consider best practices and performance\n\n## Response Structure\n\n1. Summary of the codebase\n2. Analysis of the specific task or problem\n3. Solution or implementation\n4. Explanation of your approach"
-    
+    local prompt_content =
+      "## Instructions\n\nYou are helping with a project. Analyze the code provided and assist with development tasks.\n\n## Guidelines\n\n- Explain your reasoning step by step\n- Provide complete, working code solutions\n- Consider best practices and performance\n\n## Response Structure\n\n1. Summary of the codebase\n2. Analysis of the specific task or problem\n3. Solution or implementation\n4. Explanation of your approach"
+
     if not utils.write_file_content(config_dir .. "/lc-prompt.md", prompt_content) then
       vim.notify("Failed to write prompt file", vim.log.levels.ERROR)
     end
-    
+
     return true
   end
 end

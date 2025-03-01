@@ -62,6 +62,9 @@ function ProfileManager.new(root)
     if not config or not config.profiles or not config.profiles.code then
       vim.notify("Failed to read llm-context profile file", vim.log.levels.ERROR)
     end
+
+    self:switch_profile("buffer")
+    self:update_profile_with_buffers("buffer")
   end
 
   return self

@@ -62,19 +62,11 @@ local commands = {
 
   -- LLM Context integration commands
   llm = {
-    -- Initialize LLM Context
+    -- Initialize LLM Context with additional profiles
     init = function()
-      local LLMContext = require("context-groups.llm")
-      local project = require("context-groups.core")
-
-      local root = project.find_root(vim.fn.expand("%:p"))
-      local llm_ctx = LLMContext.new(root)
-
-      if llm_ctx:is_initialized() or llm_ctx:initialize() then
-        vim.notify("LLM Context initialized successfully")
-      else
-        vim.notify("Failed to initialize LLM Context", vim.log.levels.ERROR)
-      end
+      -- Use the enhanced initialization module
+      local init_llm = require("context-groups.llm.init_llm")
+      init_llm.init_llm_context()
     end,
 
     -- List available profiles
@@ -271,7 +263,7 @@ function M.register_commands()
 
   -- LLM Context commands
   create_command("ContextGroupInitLLM", commands.llm.init, {
-    desc = "Initialize LLM Context for the project",
+    desc = "Initialize LLM Context for the project with additional profiles",
   })
 
   create_command("ContextGroupListProfiles", commands.llm.list_profiles, {
@@ -359,3 +351,4 @@ function M.setup()
 end
 
 return M
+

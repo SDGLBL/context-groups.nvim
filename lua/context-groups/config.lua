@@ -9,6 +9,10 @@
 ---@field show_external boolean Show external dependencies
 ---@field ignore_patterns string[] Patterns to ignore when importing
 
+---@class YamlParserConfig
+---@field debug boolean Enable debug mode for YAML parser
+---@field block_style boolean Use block style for YAML output
+
 ---@class ContextGroupsConfig
 ---@field keymaps ContextGroupsKeymaps Key mappings configuration
 ---@field storage_path? string Path to store plugin data
@@ -19,13 +23,14 @@
 ---@field on_context_change? function Called when context group changes
 ---@field language_config table<string, table> Language specific configurations
 ---@field export table<string, any> Export configuration
+---@field yaml_parser YamlParserConfig YAML parser configuration
 
 local M = {}
 
 -- Default configuration
 local DEFAULT_CONFIG = {
   yaml_parser = {
-    debug = false,
+    debug = true,
     block_style = true,
   },
   keymaps = {

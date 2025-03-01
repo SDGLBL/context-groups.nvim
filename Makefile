@@ -7,11 +7,11 @@ TREESITTER_URL = https://github.com/nvim-treesitter/nvim-treesitter
 
 all: format test
 
-rust:
+build:
 	@echo "===> Building Rust libraries:"
 	@$(MAKE) -f Makefile.rust
 
-rust-clean:
+clean:
 	@echo "===> Cleaning Rust builds:"
 	@$(MAKE) -f Makefile.rust clean
 

@@ -294,18 +294,16 @@ end
 -- Get all open buffer file paths
 ---@return string[] file_paths
 function ProfileManager:get_open_buffer_files()
+  local context_core = require("context-groups.core")
+  local root_path = vim.fn.fnamemodify(self.config_path, ":h:h")
   local files = {}
   local seen = {}
-  local context_core = require("context-groups.core")
 
   -- Get currently open files
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    -- Only include normal file buffers
     if vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buftype == "" then
       local path = vim.api.nvim_buf_get_name(bufnr)
       if path and path ~= "" and vim.fn.filereadable(path) == 1 then
-        -- Convert to relative path
-        local root_path = vim.fn.fnamemodify(self.config_path, ":h:h")
         path = vim.fn.fnamemodify(path, ":p")
         if vim.startswith(path, root_path) then
           path = path:sub(#root_path + 2) -- +2 to remove the trailing slash

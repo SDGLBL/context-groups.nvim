@@ -178,21 +178,105 @@ function ProfileManager:create_profile(name, opts)
 
   -- Create profile configuration
   config.profiles = config.profiles or {}
+
+  -- Set base to "code" by default if it exists and not explicitly provided
+  local use_base = opts.base
+  if use_base == nil and config.profiles.code then
+    use_base = "code"
+  end
+
   config.profiles[name] = {
-    gitignores = opts.gitignores or {
-      full_files = { ".git", ".gitignore", ".llm-context/", "*.lock" },
-      outline_files = { ".git", ".gitignore", ".llm-context/", "*.lock" },
-    },
+    -- Add base field to inherit from code profile
+    base = use_base,
+    -- Only include additional configurations that differ from base profile
     settings = opts.settings or {
       no_media = true,
       with_user_notes = false,
       with_prompt = false,
     },
-    ["only-include"] = opts.only_include or {
-      full_files = { "**/*" },
-      outline_files = { "**/*" },
-    },
+    -- Keep gitignores and only-include if explicitly provided
+    -- otherwise they will be inherited from the base profile
   }
+
+  -- Add gitignores and only-include only if explicitly provided
+  -- or if no base profile is used
+  if not use_base or opts.gitignores then
+    config.profiles[name].gitignores = opts.gitignores
+      or {
+        full_files = {
+          ".git",
+          ".gitignore",
+          ".llm-context/",
+          "rust/target/*",
+          "*.tmp",
+          "*.lock",
+          "package-lock.json",
+          "yarn.lock",
+          "pnpm-lock.yaml",
+          "go.sum",
+          "elm-stuff",
+          "LICENSE",
+          "CHANGELOG.md",
+          "README.md",
+          ".env",
+          ".dockerignore",
+          "Dockerfile",
+          "docker-compose.yml",
+          "*.log",
+          "*.svg",
+          "*.png",
+          "*.jpg",
+          "*.jpeg",
+          "*.gif",
+          "*.ico",
+          "*.woff",
+          "*.woff2",
+          "*.eot",
+          "*.ttf",
+          "*.map",
+        },
+        outline_files = {
+          ".git",
+          ".gitignore",
+          ".llm-context/",
+          "rust/target/*",
+          "*.tmp",
+          "*.lock",
+          "package-lock.json",
+          "yarn.lock",
+          "pnpm-lock.yaml",
+          "go.sum",
+          "elm-stuff",
+          "LICENSE",
+          "CHANGELOG.md",
+          "README.md",
+          ".env",
+          ".dockerignore",
+          "Dockerfile",
+          "docker-compose.yml",
+          "*.log",
+          "*.svg",
+          "*.png",
+          "*.jpg",
+          "*.jpeg",
+          "*.gif",
+          "*.ico",
+          "*.woff",
+          "*.woff2",
+          "*.eot",
+          "*.ttf",
+          "*.map",
+        },
+      }
+  end
+
+  if not use_base or opts.only_include then
+    config.profiles[name]["only-include"] = opts.only_include
+      or {
+        full_files = { "**/*" },
+        outline_files = { "**/*" },
+      }
+  end
 
   -- Write updated configuration
   if not self:write_config(config) then
@@ -270,8 +354,9 @@ function ProfileManager:create_profile_from_context(name, context_files)
     add_file(file)
   end
 
-  -- Create profile with all files
+  -- Create profile with all files and use 'code' as the base
   return self:create_profile(name, {
+    base = "code", -- Explicitly set base to code
     only_include = {
       full_files = all_files,
       outline_files = all_files,

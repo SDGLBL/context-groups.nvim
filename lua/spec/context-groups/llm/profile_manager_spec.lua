@@ -212,4 +212,34 @@ templates:
     -- so we just check that we have at least one
     assert.is_true(#profiles >= 1)
   end)
+  
+  -- Test profile creation with inheritance
+  it("should create profiles with base inheritance", function()
+    -- Create a mock for create_profile to avoid executing external commands
+    local original_create_profile = profile_manager.create_profile
+    local called_with = {}
+    
+    profile_manager.create_profile = function(self, name, opts)
+      called_with.name = name
+      called_with.opts = opts
+      return true
+    end
+    
+    -- External command mock
+    local original_switch_profile = profile_manager.switch_profile
+    profile_manager.switch_profile = function() return true end
+    
+    -- Test creating a profile from context
+    profile_manager:create_profile_from_context("test-profile", {"file1.lua", "file2.lua"})
+    
+    -- Verify that base was set to "code"
+    assert.equals("test-profile", called_with.name)
+    assert.equals("code", called_with.opts.base)
+    assert.is_table(called_with.opts.only_include)
+    assert.is_table(called_with.opts.only_include.full_files)
+    
+    -- Restore original functions
+    profile_manager.create_profile = original_create_profile
+    profile_manager.switch_profile = original_switch_profile
+  end)
 end)

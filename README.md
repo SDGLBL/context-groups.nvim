@@ -120,13 +120,20 @@ Context Groups integrates with [LLM Context](https://github.com/cyberchitta/llm-
 
 3. Manage profiles:
    ```
-   :ContextGroupSwitchProfile    # Switch profiles
-   :ContextGroupCreateProfile    # Create new profile
-   :ContextGroupSync             # Sync context files
+   :ContextGroupSwitchProfile            # Switch profiles
+   :ContextGroupCreateProfile {name}     # Create new profile
+   :ContextGroupSync                     # Sync context files
    ```
+
+   When creating a new profile, it automatically inherits from the "code" base profile, ensuring consistent settings while allowing for customization. For example:
+   ```
+   :ContextGroupCreateProfile my-feature
+   ```
+   This creates a new profile named "my-feature" with the same settings as the "code" profile but with your current buffer files included.
 
 ## Recent Updates
 
+- **March 2025**: Enhanced profile creation to automatically use the "code" profile as a base for better reusability.
 - **February 2025**: Added support for YAML configuration in LLM Context integration. See [YAML Migration Guide](docs/yaml-migration.md) for details.
 - **February 2025**: Major refactoring to improve code organization and maintainability. See [REFACTORING.md](REFACTORING.md) for details.
 

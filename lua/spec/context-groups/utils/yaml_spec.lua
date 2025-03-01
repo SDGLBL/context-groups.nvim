@@ -1,8 +1,8 @@
 -- lua/spec/context-groups/utils/yaml_spec.lua
 -- Tests for the YAML parser
 
-local yaml = require("context-groups.utils.yaml")
 local assert = require("luassert")
+local yaml = require("context-groups.utils.yaml")
 
 -- Skip tests that are problematic with the minimal implementation
 local is_minimal = yaml.get_implementation_info().implementation == "Minimal"
@@ -11,7 +11,7 @@ describe("YAML parser", function()
   -- Get implementation info for diagnostics
   local impl_info = yaml.get_implementation_info()
   print(string.format("Testing YAML parser with %s implementation", impl_info.implementation))
-  
+
   -- Test basic parsing functionality
   it("should parse basic YAML correctly", function()
     local sample = [[
@@ -41,7 +41,7 @@ parent:
     local result = yaml.eval(sample)
     assert.is_table(result)
     assert.is_table(result.parent)
-    
+
     -- More detailed checks if nested parsing is supported
     if result.parent.child1 then
       assert.equals("value1", result.parent.child1)
@@ -67,11 +67,11 @@ mixed:
 
       local result = yaml.eval(sample)
       assert.is_table(result)
-      
+
       assert.is_table(result.items)
       assert.equals("item1", result.items[1])
       assert.equals("item2", result.items[2])
-      
+
       assert.is_table(result.mixed)
       assert.equals(42, result.mixed[1])
     end)
@@ -90,10 +90,10 @@ no_value: no
 
     local result = yaml.eval(sample)
     assert.is_table(result)
-    
+
     -- Check special values if supported
     if result.null_value ~= nil then
-      assert.is_nil(result.null_value)
+      assert.equals(result.null_value, vim.NIL)
     end
     if result.true_value ~= nil then
       assert.is_true(result.true_value)
@@ -150,24 +150,24 @@ templates:
       profiles = {
         code = {
           gitignores = {
-            full_files = {".git", ".gitignore", ".llm-context/"}
+            full_files = { ".git", ".gitignore", ".llm-context/" },
           },
           settings = {
-            no_media = true
-          }
-        }
+            no_media = true,
+          },
+        },
       },
       templates = {
-        context = "lc-context.j2"
-      }
+        context = "lc-context.j2",
+      },
     }
 
     local yaml_string = yaml.encode(data)
     local parsed = yaml.eval(yaml_string)
-    
+
     assert.is_string(yaml_string)
     assert.is_table(parsed)
-    
+
     -- If profiles are handled in the encoded result
     if parsed.profiles then
       assert.is_table(parsed.profiles)
@@ -191,7 +191,7 @@ level1:
 
     local result = yaml.eval(sample)
     assert.is_table(result)
-    
+
     -- Only check if nested parsing is supported
     if result.level1 then
       assert.is_table(result.level1)
@@ -208,10 +208,11 @@ special: "contains: colon"
 
     local result = yaml.eval(sample)
     assert.is_table(result)
-    
+
     -- Check if string handling is supported
     if result.single then
       assert.equals("single quoted", result.single)
     end
   end)
 end)
+

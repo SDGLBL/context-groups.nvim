@@ -73,7 +73,6 @@ local function load_library()
       local success, loaded_lib_or_error = pcall(ffi.load, full_path)
       if success then
         lib = loaded_lib_or_error
-        vim.notify("Loaded YAML bridge library: " .. full_path, vim.log.levels.INFO)
         return true
       else
         table.insert(errors, "Failed to load " .. full_path .. ": " .. tostring(loaded_lib_or_error))

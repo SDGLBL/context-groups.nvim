@@ -59,10 +59,8 @@ function ProfileManager.new(root)
   -- Try to activate code profile by default if initialized
   if self:is_initialized() then
     local config = self:read_config()
-    if config and config.profiles and config.profiles.code then
-      self:switch_profile("code")
-      -- Add current buffer files to code profile
-      self:update_profile_with_buffers("code")
+    if not config or not config.profiles or not config.profiles.code then
+      vim.notify("Failed to read llm-context profile file", vim.log.levels.ERROR)
     end
   end
 
@@ -309,14 +307,14 @@ function ProfileManager:get_open_buffer_files()
         if vim.startswith(path, root_path) then
           path = path:sub(#root_path + 2) -- +2 to remove the trailing slash
           seen[path] = true
-          table.insert(files, path)
+          table.insert(files, "./" .. path)
 
           -- Get context group files for this buffer
           local context_files = context_core.get_context_files(bufnr, { relative = true })
           for _, context_file in ipairs(context_files) do
             if not seen[context_file] then
               seen[context_file] = true
-              table.insert(files, context_file)
+              table.insert(files, "./" .. context_file)
             end
           end
         end
@@ -390,7 +388,7 @@ function ProfileManager:get_context_files()
     return {}
   end
 
-  local ok, parsed = pcall(utils.TOML.parse, content)
+  local ok, parsed = pcall(utils.YAML.parse, content)
   if not ok or not parsed then
     vim.notify("Failed to parse context file", vim.log.levels.ERROR)
     return {}
@@ -540,14 +538,20 @@ function ProfileManager:update_profile_with_buffers(profile_name)
   -- Update profile with calculated differences
   return self:update_profile_with_file_lists(profile_name, added, removed)
 end
+local instance_map = {}
 
 ---Create new LLMContext instance for a project
 ---@param root string Project root directory
 ---@return LLMContext
 function LLMContext.new(root)
+  if instance_map[root] then
+    return instance_map[root]
+  end
+
   local self = setmetatable({}, LLMContext)
   self.root = root
   self.profile_manager = ProfileManager.new(root)
+  instance_map[root] = self
   return self
 end
 

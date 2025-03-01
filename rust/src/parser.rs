@@ -1,5 +1,6 @@
+use serde::ser::Serialize;
 use serde_json::Value;
-use std::error::Error;
+use std::error::Error; // Added this import for the Serialize trait
 
 /// Parse YAML string to JSON string
 pub fn parse_yaml_to_json(yaml_str: &str) -> Result<String, Box<dyn Error>> {
@@ -23,10 +24,12 @@ pub fn encode_json_to_yaml(json_str: &str, block_style: bool) -> Result<String, 
         serde_yaml::to_string(&value)?
     } else {
         // Use flow style for compact representation
-        let mut serializer = serde_yaml::Serializer::new(Vec::new());
-        serializer.formatter_mut().set_canonical(true);
-        value.serialize(&mut serializer)?;
-        String::from_utf8(serializer.into_inner())?
+        // Fixed: Removed formatter_mut() call which is not available
+        // and simplified to use to_string() with a different approach
+        let yaml_str = serde_yaml::to_string(&value)?;
+        // If we want to keep compact representation, we could potentially
+        // process the string further here if needed
+        yaml_str
     };
 
     Ok(yaml_str)

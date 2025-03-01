@@ -10,16 +10,7 @@ if not has_ffi then
 end
 
 -- Try to load JSON module for conversion
-local has_json, json
-if pcall(require, "cjson") then
-  has_json = true
-  json = require("cjson")
-elseif pcall(require, "dkjson") then
-  has_json = true
-  json = require("dkjson")
-else
-  has_json = false
-end
+local json = vim.json
 
 -- Try to load rust library
 local lib = nil
@@ -44,11 +35,11 @@ local function load_library()
   lib_loaded = true
 
   local lib_paths = {
-    "./yaml_bridge",
-    "./libyaml_bridge",
-    vim.fn.stdpath("data") .. "/context-groups/yaml_bridge",
-    vim.fn.stdpath("data") .. "/context-groups/libyaml_bridge",
-    -- Add more potential paths based on OS
+    -- "./yaml_bridge",
+    -- "./libyaml_bridge",
+    -- vim.fn.stdpath("data") .. "/context-groups/yaml_bridge",
+    -- vim.fn.stdpath("data") .. "/context-groups/libyaml_bridge",
+    "/Users/lijie/project/context-groups.nvim/lua/context-groups/utils/lib/libyaml_bridge",
   }
 
   -- Add OS-specific extensions
@@ -103,11 +94,6 @@ function M.parse(yaml_str)
   -- Check if library is loaded
   if not load_library() then
     return nil, "Failed to load Rust YAML library"
-  end
-
-  -- Check if JSON module is available
-  if not has_json then
-    return nil, "No JSON module available (cjson or dkjson required)"
   end
 
   -- Parse YAML using rust library

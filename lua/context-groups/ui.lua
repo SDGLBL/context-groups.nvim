@@ -66,27 +66,25 @@ local commands = {
     init = function()
       local LLMContext = require("context-groups.llm")
       local project = require("context-groups.core")
-      
+
       local root = project.find_root(vim.fn.expand("%:p"))
       local llm_ctx = LLMContext.new(root)
-      
+
       if llm_ctx:is_initialized() or llm_ctx:initialize() then
         vim.notify("LLM Context initialized successfully")
       else
         vim.notify("Failed to initialize LLM Context", vim.log.levels.ERROR)
       end
     end,
-    
-
 
     -- List available profiles
     list_profiles = function()
       local LLMContext = require("context-groups.llm")
       local project = require("context-groups.core")
-      
+
       local root = project.find_root(vim.fn.expand("%:p"))
       local llm_ctx = LLMContext.new(root)
-      
+
       if not llm_ctx:is_initialized() then
         vim.notify("LLM Context not initialized. Run :ContextGroupInitLLM first.", vim.log.levels.ERROR)
         return
@@ -110,10 +108,10 @@ local commands = {
     switch_profile = function(args)
       local LLMContext = require("context-groups.llm")
       local project = require("context-groups.core")
-      
+
       local root = project.find_root(vim.fn.expand("%:p"))
       local llm_ctx = LLMContext.new(root)
-      
+
       if not llm_ctx:is_initialized() then
         vim.notify("LLM Context not initialized. Run :ContextGroupInitLLM first.", vim.log.levels.ERROR)
         return
@@ -135,10 +133,10 @@ local commands = {
     create_profile = function(args)
       local LLMContext = require("context-groups.llm")
       local project = require("context-groups.core")
-      
+
       local root = project.find_root(vim.fn.expand("%:p"))
       local llm_ctx = LLMContext.new(root)
-      
+
       if not llm_ctx:is_initialized() then
         vim.notify("LLM Context not initialized. Run :ContextGroupInitLLM first.", vim.log.levels.ERROR)
         return
@@ -169,10 +167,10 @@ local commands = {
     sync = function()
       local LLMContext = require("context-groups.llm")
       local project = require("context-groups.core")
-      
+
       local root = project.find_root(vim.fn.expand("%:p"))
       local llm_ctx = LLMContext.new(root)
-      
+
       if not llm_ctx:is_initialized() then
         vim.notify("LLM Context not initialized. Run :ContextGroupInitLLM first.", vim.log.levels.ERROR)
         return
@@ -275,7 +273,6 @@ function M.register_commands()
   create_command("ContextGroupInitLLM", commands.llm.init, {
     desc = "Initialize LLM Context for the project",
   })
-  
 
   create_command("ContextGroupListProfiles", commands.llm.list_profiles, {
     desc = "List available LLM Context profiles",
@@ -356,7 +353,7 @@ end
 function M.setup()
   -- Register commands
   M.register_commands()
-  
+
   -- Set up keymaps
   M.setup_keymaps()
 end

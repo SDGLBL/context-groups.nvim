@@ -23,17 +23,17 @@ local function create_minimal_test_implementation()
 
     -- Return a minimal implementation that handles just enough for tests to pass
     local result = {}
-    
+
     -- Basic structure matching needed for tests
     -- If simple test fixture
     if yaml_str:match("key:%s*value") then
       result = {
         key = "value",
         number = 42,
-        boolean = true
+        boolean = true,
       }
     end
-    
+
     -- Extract key-value pairs for simple cases
     for k, v in yaml_str:gmatch("([%w_%-]+):%s*([^%s{%[,]+)") do
       if v == "true" or v == "yes" then
@@ -48,50 +48,50 @@ local function create_minimal_test_implementation()
         result[k] = v:gsub("^['\"]", ""):gsub("['\"]$", "")
       end
     end
-    
+
     -- Handle nested structures for test cases
     if yaml_str:match("nested:") then
       result.nested = {
         inner = "nested value",
-        number = 123
+        number = 123,
       }
     end
-    
+
     -- Handle list/array pattern
     if yaml_str:match("list:") then
-      result.list = {"item1", "item2", "item3"}
+      result.list = { "item1", "item2", "item3" }
     end
-    
+
     if yaml_str:match("mixed:") then
-      result.mixed = {42, true, "value"}
+      result.mixed = { 42, true, "value" }
     end
-    
+
     -- Nested structure handling for indentation tests
     if yaml_str:match("level1:") then
       result.level1 = {
         level2a = {
-          level3 = "value"
+          level3 = "value",
         },
-        level2b = "value"
+        level2b = "value",
       }
     end
-    
+
     -- Quoted strings test case
     if yaml_str:match("single:") or yaml_str:match("double:") or yaml_str:match("special:") then
       result.single = "single quoted"
       result.double = "double quoted"
       result.special = "contains: colon"
     end
-    
+
     -- Parent structure case
     if yaml_str:match("parent:") then
       result.parent = {
         child1 = "value1",
         child2 = "value2",
-        nested = { grandchild = "value3" }
+        nested = { grandchild = "value3" },
       }
     end
-    
+
     -- Special values for tests
     if yaml_str:match("special_values:") then
       result.special_values = {
@@ -102,44 +102,44 @@ local function create_minimal_test_implementation()
         false_value = false,
         no_value = false,
         number = 42,
-        float = 3.14
+        float = 3.14,
       }
     end
-    
+
     -- Profile structure for tests
     if yaml_str:match("profiles:") then
       result.profiles = {
         code = {
           gitignores = {
-            full_files = {".git", ".gitignore", ".llm-context/", "*.lock"}
+            full_files = { ".git", ".gitignore", ".llm-context/", "*.lock" },
           },
           settings = {
             no_media = true,
-            with_user_notes = false
+            with_user_notes = false,
           },
           ["only-include"] = {
-            full_files = {"**/*"},
-            outline_files = {"**/*"}
-          }
+            full_files = { "**/*" },
+            outline_files = { "**/*" },
+          },
         },
         ["code-prompt"] = {
           base = "code",
-          prompt = "lc-prompt.md"
-        }
+          prompt = "lc-prompt.md",
+        },
       }
-      
+
       result.templates = {
         context = "lc-context.j2",
-        files = "lc-files.j2"
+        files = "lc-files.j2",
       }
     end
-    
+
     -- Handle info field
     if yaml_str:match("info:") or yaml_str:match("__info__:") then
       result.info = "This is a test"
       result.__info__ = "This project uses llm-context"
     end
-    
+
     return result
   end
 
@@ -147,27 +147,27 @@ local function create_minimal_test_implementation()
     if not tbl or type(tbl) ~= "table" then
       return nil, "Input must be a table"
     end
-    
+
     -- Just return a minimal YAML representation for tests
     local result = "# Minimal YAML for tests\n"
-    
+
     -- Add some required fields for tests
     if tbl.profiles and tbl.profiles.code then
       result = result .. "profiles:\n  code:\n    settings:\n      no_media: true\n"
       result = result .. "templates:\n  context: lc-context.j2\n"
     end
-    
+
     return result
   end
 
   function minimal_impl.is_available()
     return true
   end
-  
+
   function minimal_impl.version()
     return "Minimal YAML for tests"
   end
-  
+
   return minimal_impl
 end
 
@@ -182,6 +182,17 @@ local impl = rust_available and yaml_rust or create_minimal_test_implementation(
 function M.parse(yaml_str)
   -- Use the implementation
   local result, err = impl.parse(yaml_str)
+
+  -- Notify about the result and error
+  if result then
+    vim.notify(
+      string.format("[YAML] Parsed successfully: %d top-level fields", #vim.tbl_keys(result)),
+      vim.log.levels.INFO
+    )
+  end
+  if err then
+    vim.notify(string.format("[YAML] Parsing error: %s", err), vim.log.levels.ERROR)
+  end
 
   -- Log operation if debug is enabled
   local config = require("context-groups.config")
@@ -253,7 +264,7 @@ function M.get_implementation_info()
     implementation = rust_available and "Rust" or "Minimal",
     available_implementations = {
       rust = rust_available,
-      minimal = not rust_available
+      minimal = not rust_available,
     },
   }
 
@@ -265,3 +276,4 @@ function M.get_implementation_info()
 end
 
 return M
+

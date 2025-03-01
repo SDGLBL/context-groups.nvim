@@ -30,7 +30,7 @@ local M = {}
 -- Default configuration
 local DEFAULT_CONFIG = {
   yaml_parser = {
-    debug = true,
+    debug = false,
     block_style = true,
   },
   keymaps = {

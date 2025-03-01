@@ -5,13 +5,17 @@
 -- Try to load Rust implementation first
 local ok, yaml_rust = pcall(require, "context-groups.utils.yaml_rust")
 if not ok then
-  vim.notify("Could not load YAML Rust bridge: " .. tostring(yaml_rust) .. ". Using minimal implementation", vim.log.levels.WARN)
+  vim.notify(
+    "Could not load YAML Rust bridge: " .. tostring(yaml_rust) .. ". Using minimal implementation",
+    vim.log.levels.WARN
+  )
   yaml_rust = nil
 end
 
 local M = {}
 
 -- Minimal implementation for tests when Rust is not available
+---@return table minimal_impl Minimal implementation for tests
 local function create_minimal_test_implementation()
   local minimal_impl = {}
 
@@ -181,14 +185,17 @@ local rust_available = yaml_rust ~= nil and yaml_rust.is_available and yaml_rust
 
 -- Use Rust implementation if available, otherwise use minimal implementation
 local impl
-if rust_available then
+if rust_available and yaml_rust then
   impl = yaml_rust
   -- Only log at debug level since this is expected behavior
   vim.notify("Using Rust YAML implementation", vim.log.levels.DEBUG)
 else
   impl = create_minimal_test_implementation()
   -- Log at info level since user may want to install the native library
-  vim.notify("Using minimal YAML implementation (consider installing Rust bridge for better performance)", vim.log.levels.INFO)
+  vim.notify(
+    "Using minimal YAML implementation (consider installing Rust bridge for better performance)",
+    vim.log.levels.INFO
+  )
 end
 
 -- Parse YAML string to Lua table
@@ -286,4 +293,3 @@ function M.get_implementation_info()
 end
 
 return M
-

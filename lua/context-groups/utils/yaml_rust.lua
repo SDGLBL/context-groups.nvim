@@ -141,7 +141,7 @@ end
 
 -- Encode Lua table to YAML string
 ---@param tbl table Table to encode
----@param block_style boolean Use block style for better readability
+---@param block_style ?boolean Use block style for better readability
 ---@return string|nil yaml_str YAML string or nil on error
 ---@return string|nil error_message Error message in case of failure
 function M.encode(tbl, block_style)

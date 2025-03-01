@@ -26,7 +26,7 @@ local M = {}
 local DEFAULT_CONFIG = {
   yaml_parser = {
     debug = false,
-    block_style = true
+    block_style = true,
   },
   keymaps = {
     add_context = "<leader>ca",

@@ -54,13 +54,13 @@ local function load_library()
   -- Add OS-specific extensions
   local os_name = vim.loop.os_uname().sysname:lower()
   local extensions = {}
-  
+
   if os_name:match("windows") then
-    extensions = {".dll"}
+    extensions = { ".dll" }
   elseif os_name:match("darwin") then
-    extensions = {".dylib", ".so"}
+    extensions = { ".dylib", ".so" }
   else -- Linux and others
-    extensions = {".so"}
+    extensions = { ".so" }
   end
 
   -- Try each path with each extension
@@ -118,7 +118,7 @@ function M.parse(yaml_str)
 
   -- Convert returned C string to Lua string
   local json_str = ffi.string(json_cstr)
-  
+
   -- Free the C string
   lib.free_string(json_cstr)
 
@@ -150,7 +150,7 @@ function M.encode(tbl, block_style)
 
   -- Default to block style
   block_style = block_style ~= false
-  
+
   -- Check if library is loaded
   if not load_library() then
     return nil, "Failed to load Rust YAML library"
@@ -175,7 +175,7 @@ function M.encode(tbl, block_style)
 
   -- Convert returned C string to Lua string
   local yaml_str = ffi.string(yaml_cstr)
-  
+
   -- Free the C string
   lib.free_string(yaml_cstr)
 
@@ -200,17 +200,19 @@ function M.version()
   if not load_library() then
     return nil
   end
-  
+
   local version_cstr = lib.yaml_bridge_version()
   if version_cstr == nil then
     return nil
   end
-  
+
   return ffi.string(version_cstr)
 end
 
 -- For compatibility with the current yaml.lua API
 M.eval = M.parse
-M.dump = function(tbl) print(M.encode(tbl, true)) end
+M.dump = function(tbl)
+  print(M.encode(tbl, true))
+end
 
 return M

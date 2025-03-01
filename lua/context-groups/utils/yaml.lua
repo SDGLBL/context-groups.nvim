@@ -20,18 +20,18 @@ do
     if not yaml_str or type(yaml_str) ~= "string" then
       return nil, "Input must be a string"
     end
-    
+
     -- Handle invalid YAML test case
     if yaml_str:match("key:%s*:%s*invalid") or yaml_str:match("-broken:") then
       return nil, "Mock YAML parsing error"
     end
-    
+
     -- Return a simple test structure based on common patterns in tests
     if yaml_str:match("key:%s*value") then
       return {
         key = "value",
         number = 42,
-        boolean = true
+        boolean = true,
       }
     elseif yaml_str:match("parent:") then
       return {
@@ -39,14 +39,14 @@ do
           child1 = "value1",
           child2 = "value2",
           nested = {
-            grandchild = "value3"
-          }
-        }
+            grandchild = "value3",
+          },
+        },
       }
     elseif yaml_str:match("items:") then
       return {
-        items = {"item1", "item2", "item3"},
-        mixed = {42, true, "value"}
+        items = { "item1", "item2", "item3" },
+        mixed = { 42, true, "value" },
       }
     elseif yaml_str:match("null_value:") then
       return {
@@ -55,50 +55,52 @@ do
         true_value = true,
         yes_value = true,
         false_value = false,
-        no_value = false
+        no_value = false,
       }
-    elseif yaml_str:match("---") and yaml_str:match("profiles:") or
-           yaml_str:match("profiles:") and yaml_str:match("code:") then
+    elseif
+      yaml_str:match("---") and yaml_str:match("profiles:")
+      or yaml_str:match("profiles:") and yaml_str:match("code:")
+    then
       -- Handle both profile variations in tests
       return {
         profiles = {
           code = {
             gitignores = {
-              full_files = {".git", ".gitignore", ".llm-context/", "*.lock"}
+              full_files = { ".git", ".gitignore", ".llm-context/", "*.lock" },
             },
             settings = {
               no_media = true,
-              with_user_notes = false
+              with_user_notes = false,
             },
             ["only-include"] = {
-              full_files = {"**/*"},
-              outline_files = {"**/*"}
-            }
+              full_files = { "**/*" },
+              outline_files = { "**/*" },
+            },
           },
           ["code-prompt"] = {
             base = "code",
-            prompt = "lc-prompt.md"
-          }
+            prompt = "lc-prompt.md",
+          },
         },
         templates = {
           context = "lc-context.j2",
-          files = "lc-files.j2"
-        }
+          files = "lc-files.j2",
+        },
       }
     elseif yaml_str:match("level1:") then
       return {
         level1 = {
           level2a = {
-            level3 = "value"
+            level3 = "value",
           },
-          level2b = "value"
-        }
+          level2b = "value",
+        },
       }
     elseif yaml_str:match("single:") then
       return {
         single = "single quoted",
         double = "double quoted",
-        special = "contains: colon"
+        special = "contains: colon",
       }
     elseif yaml_str:match("info:") or yaml_str:match("__info__:") then
       return {
@@ -107,16 +109,16 @@ do
         profiles = {
           test = {
             settings = {
-              no_media = true
-            }
+              no_media = true,
+            },
           },
           code = {},
           ["code-file"] = {},
-          ["code-prompt"] = {}
+          ["code-prompt"] = {},
         },
         templates = {
-          context = "test.j2"
-        }
+          context = "test.j2",
+        },
       }
     elseif yaml_str:match("special_values:") then
       return {
@@ -128,23 +130,23 @@ do
           false_value = false,
           no_value = false,
           number = 42,
-          float = 3.14
-        }
+          float = 3.14,
+        },
       }
     else
       -- Default simple structure
       return {}
     end
   end
-  
+
   function yaml_mock.encode(tbl)
     if not tbl or type(tbl) ~= "table" then
       return nil, "Input must be a table"
     end
-    
+
     -- For testing, just return a simple YAML representation
-    local lines = {"# Mock YAML"}
-    
+    local lines = { "# Mock YAML" }
+
     for k, v in pairs(tbl) do
       if type(v) == "table" then
         table.insert(lines, k .. ":")
@@ -162,12 +164,16 @@ do
         table.insert(lines, k .. ": " .. tostring(v))
       end
     end
-    
+
     return table.concat(lines, "\n")
   end
-  
-  yaml_mock.is_available = function() return true end
-  yaml_mock.version = function() return "Mock YAML 1.0" end
+
+  yaml_mock.is_available = function()
+    return true
+  end
+  yaml_mock.version = function()
+    return "Mock YAML 1.0"
+  end
 end
 
 -- Parse YAML string to Lua table
@@ -177,20 +183,23 @@ end
 function M.parse(yaml_str)
   -- Use the appropriate implementation
   local impl = is_test_env and yaml_mock or yaml_rust
-  
+
   if not impl then
     return nil, "YAML implementation not available"
   end
-  
+
   -- Use the selected implementation
   local result, err = impl.parse(yaml_str)
-  
+
   -- Log operation if debug is enabled
   local config = require("context-groups.config")
   if config.get().yaml_parser and config.get().yaml_parser.debug then
     vim.notify(
-      string.format("[YAML] Parsed with %s implementation: %s bytes, success: %s",
-        is_test_env and "Mock" or "Rust", #yaml_str, result ~= nil
+      string.format(
+        "[YAML] Parsed with %s implementation: %s bytes, success: %s",
+        is_test_env and "Mock" or "Rust",
+        #yaml_str,
+        result ~= nil
       ),
       vim.log.levels.DEBUG
     )
@@ -198,7 +207,7 @@ function M.parse(yaml_str)
       vim.notify("[YAML] Error: " .. err, vim.log.levels.DEBUG)
     end
   end
-  
+
   return result, err
 end
 
@@ -210,13 +219,13 @@ end
 function M.encode(tbl, opts)
   -- Use the appropriate implementation
   local impl = is_test_env and yaml_mock or yaml_rust
-  
+
   if not impl then
     return nil, "YAML implementation not available"
   end
-  
+
   local block_style = opts and opts.block_style ~= nil and opts.block_style or true
-  
+
   -- Use selected implementation
   local result, err
   if is_test_env then
@@ -224,13 +233,16 @@ function M.encode(tbl, opts)
   else
     result, err = impl.encode(tbl, block_style)
   end
-  
+
   -- Log operation if debug is enabled
   local config = require("context-groups.config")
   if config.get().yaml_parser and config.get().yaml_parser.debug then
     vim.notify(
-      string.format("[YAML] Encoded with %s implementation: %s bytes, success: %s",
-        is_test_env and "Mock" or "Rust", result and #result or 0, result ~= nil
+      string.format(
+        "[YAML] Encoded with %s implementation: %s bytes, success: %s",
+        is_test_env and "Mock" or "Rust",
+        result and #result or 0,
+        result ~= nil
       ),
       vim.log.levels.DEBUG
     )
@@ -238,13 +250,15 @@ function M.encode(tbl, opts)
       vim.notify("[YAML] Error: " .. err, vim.log.levels.DEBUG)
     end
   end
-  
+
   return result, err
 end
 
 -- For compatibility with the existing yaml.lua API
 M.eval = M.parse
-M.dump = function(tbl) print(M.encode(tbl)) end
+M.dump = function(tbl)
+  print(M.encode(tbl))
+end
 
 -- Get information about the YAML implementation
 ---@return table info Information about the implementation
@@ -253,15 +267,15 @@ function M.get_implementation_info()
     implementation = is_test_env and "Mock" or "Rust",
     available_implementations = {
       rust = yaml_rust and yaml_rust.is_available(),
-      mock = is_test_env
-    }
+      mock = is_test_env,
+    },
   }
-  
+
   local version_func = is_test_env and yaml_mock.version or (yaml_rust and yaml_rust.version)
   if version_func then
     info.version = version_func()
   end
-  
+
   return info
 end
 

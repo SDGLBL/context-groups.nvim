@@ -13,13 +13,13 @@ function M.parse(content)
   if not content or type(content) ~= "string" or content == "" then
     return nil
   end
-  
+
   local ok, result = pcall(yaml.eval, content)
   if not ok then
     vim.notify("Error parsing YAML: " .. tostring(result), vim.log.levels.ERROR)
     return nil
   end
-  
+
   return result
 end
 
@@ -31,13 +31,13 @@ function M.encode(tbl)
     vim.notify("Cannot encode non-table to YAML", vim.log.levels.ERROR)
     return ""
   end
-  
+
   local ok, result = pcall(yaml.encode, tbl)
   if not ok then
     vim.notify("Error encoding to YAML: " .. tostring(result), vim.log.levels.ERROR)
     return ""
   end
-  
+
   return result
 end
 
@@ -50,13 +50,13 @@ function M.read_file(filepath)
     vim.notify("YAML file not readable: " .. filepath, vim.log.levels.ERROR)
     return nil
   end
-  
+
   -- Read file content
   local content = table.concat(vim.fn.readfile(filepath), "\n")
   if content == "" then
     return {}
   end
-  
+
   return M.parse(content)
 end
 
@@ -69,7 +69,7 @@ function M.write_file(filepath, data)
   if yaml_content == "" then
     return false
   end
-  
+
   local lines = vim.split(yaml_content, "\n")
   return vim.fn.writefile(lines, filepath) == 0
 end
@@ -90,19 +90,18 @@ function M.validate(data, schema)
   if not data or type(data) ~= "table" then
     return false, "Data is not a valid table"
   end
-  
+
   -- Just a simple existence check for required fields
   for key, field_type in pairs(schema) do
     if data[key] == nil then
       return false, "Missing required field: " .. key
     end
-    
+
     if type(data[key]) ~= field_type then
-      return false, "Field " .. key .. " should be of type " .. field_type .. 
-                   " but is " .. type(data[key])
+      return false, "Field " .. key .. " should be of type " .. field_type .. " but is " .. type(data[key])
     end
   end
-  
+
   return true
 end
 

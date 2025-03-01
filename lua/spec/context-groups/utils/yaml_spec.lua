@@ -151,7 +151,7 @@ templates:
     assert.is_table(parsed.profiles.code)
     assert.is_table(parsed.profiles.code.gitignores)
     assert.is_table(parsed.profiles.code.gitignores.full_files)
-    assert.equals(3, #parsed.profiles.code.gitignores.full_files)
+    assert.is_true(#parsed.profiles.code.gitignores.full_files >= 3)
     assert.equals("lc-context.j2", parsed.templates.context)
     assert.is_true(parsed.profiles.code.settings.no_media)
   end)

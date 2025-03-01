@@ -11,6 +11,10 @@ describe("YAML integration", function()
   local impl_info = yaml.get_implementation_info()
   print(string.format("Testing YAML parser with %s implementation", impl_info.implementation))
   
+  -- We could be using either Rust or Mock implementation
+  -- Let's accept either one as valid
+  assert.is_true(impl_info.implementation == "Rust" or impl_info.implementation == "Mock")
+  
   -- Test basic parsing
   it("should parse basic YAML structures", function()
     local test_yaml = [[

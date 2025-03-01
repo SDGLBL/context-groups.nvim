@@ -64,6 +64,11 @@ function M.show_context_group()
   require("context-groups.picker").show_context_group()
 end
 
+-- Show profile picker
+function M.show_profile_picker()
+  require("context-groups.picker").show_profile_picker()
+end
+
 -- Show imports picker
 function M.show_imports_picker()
   require("context-groups.picker").show_imports_picker()

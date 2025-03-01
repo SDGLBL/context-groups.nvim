@@ -1,7 +1,8 @@
 ---@class ContextGroupsKeymaps
 ---@field add_context string Keymap to add context file
 ---@field show_context string Keymap to show context group
----@field add_imports? string Keymap to add imports to context group
+---@field init_llm? string Keymap to initialize LLM context
+---@field select_profile? string Keymap to select LLM context profile
 ---@field update_llm? string Keymap to update LLM context
 
 ---@class ImportPreferences
@@ -35,8 +36,9 @@ local DEFAULT_CONFIG = {
   },
   keymaps = {
     add_context = "<leader>ca",
-    show_context = "<leader>cs",
-    add_imports = "<leader>ci",
+    show_context = "<leader>cS",
+    init_llm = "<leader>ci",
+    select_profile = "<leader>cs",
     update_llm = "<leader>cr",
   },
   storage_path = vim.fn.stdpath("data") .. "/context-groups",

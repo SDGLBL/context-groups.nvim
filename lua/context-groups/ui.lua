@@ -30,7 +30,7 @@ local commands = {
       picker.show_context_group()
     end,
 
-    -- Add imports to context group
+    -- Add imports to context group (retained for command use)
     add_imports = function()
       picker.show_imports_picker()
     end,
@@ -326,11 +326,18 @@ function M.setup_keymaps()
     picker.show_context_group()
   end, { desc = "Show current context group" })
 
-  -- Add imports to context
-  if keymaps.add_imports then
-    vim.keymap.set("n", keymaps.add_imports, function()
-      picker.show_imports_picker()
-    end, { desc = "Add imports to context group" })
+  -- Initialize LLM context
+  if keymaps.init_llm then
+    vim.keymap.set("n", keymaps.init_llm, function()
+      vim.cmd("ContextGroupInitLLM")
+    end, { desc = "Initialize LLM context" })
+  end
+
+  -- Select profile
+  if keymaps.select_profile then
+    vim.keymap.set("n", keymaps.select_profile, function()
+      picker.show_profile_picker()
+    end, { desc = "Select LLM context profile" })
   end
 
   -- Update LLM context
@@ -351,4 +358,3 @@ function M.setup()
 end
 
 return M
-

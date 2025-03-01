@@ -24,6 +24,11 @@ local M = {}
 
 -- Default configuration
 local DEFAULT_CONFIG = {
+  yaml_parser = {
+    use_rust = nil, -- nil means auto-detect
+    debug = false,
+    block_style = true
+  },
   keymaps = {
     add_context = "<leader>ca",
     show_context = "<leader>cs",

@@ -7,6 +7,14 @@ TREESITTER_URL = https://github.com/nvim-treesitter/nvim-treesitter
 
 all: format test
 
+rust:
+	@echo "===> Building Rust libraries:"
+	@$(MAKE) -f Makefile.rust
+
+rust-clean:
+	@echo "===> Cleaning Rust builds:"
+	@$(MAKE) -f Makefile.rust clean
+
 format:
 	@echo "===> Formatting:"
 	@stylua lua/ -f ./stylua.toml

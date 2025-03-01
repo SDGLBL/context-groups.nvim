@@ -1,0 +1,66 @@
+# Makefile for building the Rust YAML bridge library
+
+# Variables for Rust/Cargo
+CARGO := cargo
+CARGO_FLAGS := --release
+RUST_DIR := rust
+TARGET_DIR := $(RUST_DIR)/target/release
+LIB_NAME := yaml_bridge
+OUT_DIR := lua/context-groups/utils/lib
+
+# Platform detection
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	LIB_EXT := .so
+	LIB_PREFIX := lib
+endif
+ifeq ($(UNAME_S),Darwin)
+	LIB_EXT := .dylib
+	LIB_PREFIX := lib
+endif
+ifeq ($(OS),Windows_NT)
+	LIB_EXT := .dll
+	LIB_PREFIX :=
+endif
+
+# If platform not detected, default to Linux
+ifndef LIB_EXT
+	LIB_EXT := .so
+	LIB_PREFIX := lib
+endif
+
+# Full library name
+FULL_LIB_NAME := $(LIB_PREFIX)$(LIB_NAME)$(LIB_EXT)
+
+# Target paths
+TARGET_LIB := $(TARGET_DIR)/$(FULL_LIB_NAME)
+OUT_LIB := $(OUT_DIR)/$(FULL_LIB_NAME)
+
+# Main targets
+.PHONY: all clean test install
+
+all: $(OUT_LIB)
+
+# Create output directory
+$(OUT_DIR):
+	mkdir -p $(OUT_DIR)
+
+# Build the Rust library
+$(TARGET_LIB):
+	cd $(RUST_DIR) && $(CARGO) build $(CARGO_FLAGS)
+
+# Copy the built library to the Lua module directory
+$(OUT_LIB): $(TARGET_LIB) $(OUT_DIR)
+	cp $(TARGET_LIB) $(OUT_LIB)
+
+# Shortcut to install
+install: $(OUT_LIB)
+
+# Test the Rust library directly
+test:
+	cd $(RUST_DIR) && $(CARGO) test
+
+# Clean built files
+clean:
+	cd $(RUST_DIR) && $(CARGO) clean
+	rm -rf $(OUT_DIR)

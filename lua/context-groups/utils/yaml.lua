@@ -2,7 +2,12 @@
 -- YAML parser facade that primarily uses the Rust implementation
 -- With a minimal fallback for testing when Rust is not available
 
-local yaml_rust = require("context-groups.utils.yaml_rust")
+-- Try to load Rust implementation first
+local ok, yaml_rust = pcall(require, "context-groups.utils.yaml_rust")
+if not ok then
+  vim.notify("Could not load YAML Rust bridge: " .. tostring(yaml_rust) .. ". Using minimal implementation", vim.log.levels.WARN)
+  yaml_rust = nil
+end
 
 local M = {}
 
@@ -172,8 +177,19 @@ local function create_minimal_test_implementation()
 end
 
 -- Check if Rust implementation is available
-local rust_available = yaml_rust and yaml_rust.is_available and yaml_rust.is_available()
-local impl = rust_available and yaml_rust or create_minimal_test_implementation()
+local rust_available = yaml_rust ~= nil and yaml_rust.is_available and yaml_rust.is_available()
+
+-- Use Rust implementation if available, otherwise use minimal implementation
+local impl
+if rust_available then
+  impl = yaml_rust
+  -- Only log at debug level since this is expected behavior
+  vim.notify("Using Rust YAML implementation", vim.log.levels.DEBUG)
+else
+  impl = create_minimal_test_implementation()
+  -- Log at info level since user may want to install the native library
+  vim.notify("Using minimal YAML implementation (consider installing Rust bridge for better performance)", vim.log.levels.INFO)
+end
 
 -- Parse YAML string to Lua table
 ---@param yaml_str string YAML content
@@ -183,13 +199,7 @@ function M.parse(yaml_str)
   -- Use the implementation
   local result, err = impl.parse(yaml_str)
 
-  -- Notify about the result and error
-  if result then
-    vim.notify(
-      string.format("[YAML] Parsed successfully: %d top-level fields", #vim.tbl_keys(result)),
-      vim.log.levels.INFO
-    )
-  end
+  -- Only notify about errors
   if err then
     vim.notify(string.format("[YAML] Parsing error: %s", err), vim.log.levels.ERROR)
   end

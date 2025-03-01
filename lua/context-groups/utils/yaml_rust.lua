@@ -11,6 +11,12 @@ end
 
 -- Try to load JSON module for conversion
 local json = vim.json
+local has_json = (json ~= nil)
+
+-- Only warn, don't return nil because we want to allow the minimal implementation fallback
+if not has_json then
+  vim.notify("YAML bridge requires vim.json for full functionality", vim.log.levels.WARN)
+end
 
 -- Try to load rust library
 local lib = nil
@@ -18,8 +24,8 @@ local lib_loaded = false
 
 -- Define FFI signatures
 ffi.cdef([[
-  const char* yaml_parse(const char* input);
-  const char* yaml_encode(const char* input, int block_style);
+  char* yaml_parse(const char* input);
+  char* yaml_encode(const char* input, int block_style);
   void free_string(char* ptr);
   size_t get_last_error(char* buffer, size_t size);
   void set_last_error(const char* error);
@@ -35,11 +41,16 @@ local function load_library()
   lib_loaded = true
 
   local lib_paths = {
-    -- "./yaml_bridge",
-    -- "./libyaml_bridge",
-    -- vim.fn.stdpath("data") .. "/context-groups/yaml_bridge",
-    -- vim.fn.stdpath("data") .. "/context-groups/libyaml_bridge",
+    -- First check project-relative paths
+    vim.fn.stdpath("config") .. "/context-groups/utils/lib/libyaml_bridge",
+    vim.fn.stdpath("data") .. "/context-groups/utils/lib/libyaml_bridge",
+    -- Then check absolute path
     "/Users/lijie/project/context-groups.nvim/lua/context-groups/utils/lib/libyaml_bridge",
+    -- Then try current directory
+    "./lua/context-groups/utils/lib/libyaml_bridge",
+    -- Fallbacks without path
+    "libyaml_bridge",
+    "yaml_bridge",
   }
 
   -- Add OS-specific extensions
@@ -55,18 +66,23 @@ local function load_library()
   end
 
   -- Try each path with each extension
+  local errors = {}
   for _, path in ipairs(lib_paths) do
     for _, ext in ipairs(extensions) do
       local full_path = path .. ext
-      local success, loaded_lib = pcall(ffi.load, full_path)
+      local success, loaded_lib_or_error = pcall(ffi.load, full_path)
       if success then
-        lib = loaded_lib
+        lib = loaded_lib_or_error
+        vim.notify("Loaded YAML bridge library: " .. full_path, vim.log.levels.INFO)
         return true
+      else
+        table.insert(errors, "Failed to load " .. full_path .. ": " .. tostring(loaded_lib_or_error))
       end
     end
   end
 
   -- If we get here, we couldn't load the library
+  vim.notify("Could not load YAML bridge library: " .. table.concat(errors, "\n"), vim.log.levels.WARN)
   return false
 end
 
@@ -143,8 +159,8 @@ function M.encode(tbl, block_style)
   end
 
   -- Check if JSON module is available
-  if not has_json then
-    return nil, "No JSON module available (cjson or dkjson required)"
+  if not has_json or not json then
+    return nil, "No JSON module available (vim.json required)"
   end
 
   -- Convert Lua table to JSON
@@ -192,6 +208,7 @@ function M.version()
     return nil
   end
 
+  -- No need to free this string as it's a static const
   return ffi.string(version_cstr)
 end
 

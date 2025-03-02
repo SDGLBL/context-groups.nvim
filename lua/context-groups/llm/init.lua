@@ -308,14 +308,14 @@ function ProfileManager:get_open_buffer_files()
         if vim.startswith(path, root_path) then
           path = path:sub(#root_path + 2) -- +2 to remove the trailing slash
           seen[path] = true
-          table.insert(files, "./" .. path)
+          table.insert(files, path)
 
           -- Get context group files for this buffer
           local context_files = context_core.get_context_files(bufnr, { relative = true })
           for _, context_file in ipairs(context_files) do
             if not seen[context_file] then
               seen[context_file] = true
-              table.insert(files, "./" .. context_file)
+              table.insert(files, context_file)
             end
           end
         end

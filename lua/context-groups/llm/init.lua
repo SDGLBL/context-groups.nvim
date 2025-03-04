@@ -301,7 +301,7 @@ function ProfileManager:get_open_buffer_files()
 
   -- Get currently open files
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buftype == "" then
+    if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].buftype == "" then
       local path = vim.api.nvim_buf_get_name(bufnr)
       if path and path ~= "" and vim.fn.filereadable(path) == 1 then
         path = vim.fn.fnamemodify(path, ":p")
@@ -499,6 +499,7 @@ end
 function ProfileManager:update_profile_with_buffers(profile_name)
   -- Get current buffer files
   local buffer_files = self:get_open_buffer_files()
+
   if #buffer_files == 0 then
     return true -- No files to add
   end

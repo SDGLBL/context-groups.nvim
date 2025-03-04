@@ -63,8 +63,8 @@ function ProfileManager.new(root)
       vim.notify("Failed to read llm-context profile file", vim.log.levels.ERROR)
     end
 
-    self:switch_profile("buffer")
-    self:update_profile_with_buffers("buffer")
+    self:switch_profile("code")
+    self:update_profile_with_buffers("code")
   end
 
   return self
@@ -534,6 +534,27 @@ function ProfileManager:update_profile_with_buffers(profile_name)
     if not vim.tbl_contains(buffer_files, file) then
       table.insert(removed, file)
     end
+  end
+
+  -- Notify all changes in one message
+  local message = {}
+  if #added > 0 then
+    table.insert(
+      message,
+      string.format("Adding %d files to profile '%s':\n%s", #added, profile_name, table.concat(added, "\n"))
+    )
+  end
+  if #removed > 0 then
+    table.insert(
+      message,
+      string.format("\nRemoving %d files from profile '%s':\n%s", #removed, profile_name, table.concat(removed, "\n"))
+    )
+  end
+
+  if #message > 0 then
+    vim.notify(table.concat(message, "\n"), vim.log.levels.INFO, {
+      timeout = 5000,
+    })
   end
 
   -- Update profile with calculated differences

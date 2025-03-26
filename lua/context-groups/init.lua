@@ -151,4 +151,16 @@ function M.call_code2prompt()
   return require("context-groups.code2prompt").generate_prompt(llm_ctx)
 end
 
+-- Get LSP diagnostics for current buffer
+---@return boolean success
+function M.get_lsp_diagnostics_current()
+  return require("context-groups.lsp_diagnostics").get_current_buffer_diagnostics()
+end
+
+-- Get LSP diagnostics for all open buffers
+---@return boolean success
+function M.get_lsp_diagnostics_all()
+  return require("context-groups.lsp_diagnostics").get_all_buffer_diagnostics()
+end
+
 return M

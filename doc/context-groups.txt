@@ -28,6 +28,8 @@ Key Features:
 - Automatic project root detection
 - Telescope integration for file selection and preview
 - LSP integration for intelligent imports
+- Copy buffer contents to clipboard in formatted way
+- Extract LSP diagnostics for AI-assisted debugging
 
 Example workflow:
 >
@@ -72,6 +74,9 @@ Setup with custom configuration: >
       add_context = "<leader>ca",
       show_context = "<leader>cs",
       add_imports = "<leader>ci",
+      code2prompt = "<leader>cy",
+      lsp_diagnostics_current = "<leader>cl",
+      lsp_diagnostics_all = "<leader>cL",
     },
     storage_path = vim.fn.stdpath("data") .. "/context-groups",
     import_prefs = {
@@ -119,6 +124,15 @@ Basic Usage ~
 5. Clear entire context group:
    - Use `:ContextGroupClear` command
 
+6. Copy buffer contents to clipboard:
+   - Use `:ContextGroupCode2Prompt` command or press `<leader>cy`
+   - Contents are formatted with project name and file paths
+
+7. Get LSP diagnostics:
+   - For current buffer: `:ContextGroupLSPDiagnosticsCurrent` or `<leader>cl`
+   - For all open buffers: `:ContextGroupLSPDiagnosticsAll` or `<leader>cL`
+   - Diagnostics are copied to clipboard with code context
+
                                                     *context-groups-import-prefs*
 Import Preferences ~
 
@@ -163,6 +177,14 @@ COMMANDS                                                  *context-groups-comman
 :ContextGroupCode2Prompt
     Copy contents of open buffers to clipboard in a formatted way.
 
+                                                         *:ContextGroupLSPDiagnosticsCurrent*
+:ContextGroupLSPDiagnosticsCurrent
+    Get LSP diagnostics for current buffer and copy to clipboard.
+
+                                                         *:ContextGroupLSPDiagnosticsAll*
+:ContextGroupLSPDiagnosticsAll
+    Get LSP diagnostics for all open buffers and copy to clipboard.
+
 ================================================================================
 MAPPINGS                                                  *context-groups-mappings*
 
@@ -174,6 +196,8 @@ Normal mode mappings:
 `<leader>cs`                   Show current context group
 `<leader>ci`                   Add imports to context group
 `<leader>cy`                   Copy buffer contents to clipboard in formatted way
+`<leader>cl`                   Get LSP diagnostics for current buffer
+`<leader>cL`                   Get LSP diagnostics for all open buffers
 
 Telescope picker mappings:
 
@@ -208,6 +232,8 @@ keymaps                                            *context-groups-keymaps*
         show_context = "<leader>cs",
         add_imports = "<leader>ci",
         code2prompt = "<leader>cy",
+        lsp_diagnostics_current = "<leader>cl",
+        lsp_diagnostics_all = "<leader>cL",
       }
 <
 
@@ -328,6 +354,20 @@ show_imports_picker()                      *context-groups.show_imports_picker()
 call_code2prompt()                        *context-groups.call_code2prompt()*
     Copy contents of open buffers to clipboard in a formatted way.
     Format includes project name and file paths with their contents.
+
+    Returns: ~
+        boolean   Success status
+
+get_lsp_diagnostics_current()          *context-groups.get_lsp_diagnostics_current()*
+    Get LSP diagnostics for current buffer and copy to clipboard.
+    Includes diagnostic severity, message, and code context.
+
+    Returns: ~
+        boolean   Success status
+
+get_lsp_diagnostics_all()              *context-groups.get_lsp_diagnostics_all()*
+    Get LSP diagnostics for all open buffers and copy to clipboard.
+    Includes diagnostic severity, message, and code context for each buffer.
 
     Returns: ~
         boolean   Success status

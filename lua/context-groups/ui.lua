@@ -232,6 +232,19 @@ local commands = {
       require("context-groups").call_code2prompt()
     end,
   },
+
+  -- LSP diagnostics commands
+  lsp_diagnostics = {
+    -- Get LSP diagnostics for current buffer
+    current = function()
+      require("context-groups").get_lsp_diagnostics_current()
+    end,
+
+    -- Get LSP diagnostics for all open buffers
+    all = function()
+      require("context-groups").get_lsp_diagnostics_all()
+    end,
+  },
 }
 
 -- Command factory for creating commands
@@ -323,6 +336,15 @@ function M.register_commands()
   create_command("ContextGroupCode2Prompt", commands.code2prompt.generate, {
     desc = "Copy contents of open buffers to clipboard in a formatted way",
   })
+
+  -- LSP diagnostics commands
+  create_command("ContextGroupLSPDiagnosticsCurrent", commands.lsp_diagnostics.current, {
+    desc = "Get LSP diagnostics for current buffer and copy to clipboard",
+  })
+
+  create_command("ContextGroupLSPDiagnosticsAll", commands.lsp_diagnostics.all, {
+    desc = "Get LSP diagnostics for all open buffers and copy to clipboard",
+  })
 end
 
 -- Set up keymaps
@@ -365,6 +387,20 @@ function M.setup_keymaps()
     vim.keymap.set("n", keymaps.code2prompt, function()
       require("context-groups").call_code2prompt()
     end, { desc = "Copy buffer contents to clipboard in formatted way" })
+  end
+
+  -- Get LSP diagnostics for current buffer
+  if keymaps.lsp_diagnostics_current then
+    vim.keymap.set("n", keymaps.lsp_diagnostics_current, function()
+      require("context-groups").get_lsp_diagnostics_current()
+    end, { desc = "Get LSP diagnostics for current buffer" })
+  end
+
+  -- Get LSP diagnostics for all open buffers
+  if keymaps.lsp_diagnostics_all then
+    vim.keymap.set("n", keymaps.lsp_diagnostics_all, function()
+      require("context-groups").get_lsp_diagnostics_all()
+    end, { desc = "Get LSP diagnostics for all open buffers" })
   end
 end
 

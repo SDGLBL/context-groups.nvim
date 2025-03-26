@@ -224,6 +224,14 @@ local commands = {
       vim.notify("Git changes in export: " .. (cfg.export.show_git_changes and "shown" or "hidden"))
     end,
   },
+
+  -- code2prompt command
+  code2prompt = {
+    -- Copy contents of open buffers to clipboard in a formatted way
+    generate = function()
+      require("context-groups").call_code2prompt()
+    end,
+  },
 }
 
 -- Command factory for creating commands
@@ -310,6 +318,11 @@ function M.register_commands()
   create_command("ContextGroupExportToggleGit", commands.export.toggle_git, {
     desc = "Toggle git changes in export",
   })
+
+  -- code2prompt command
+  create_command("ContextGroupCode2Prompt", commands.code2prompt.generate, {
+    desc = "Copy contents of open buffers to clipboard in a formatted way",
+  })
 end
 
 -- Set up keymaps
@@ -345,6 +358,13 @@ function M.setup_keymaps()
     vim.keymap.set("n", keymaps.update_llm, function()
       vim.cmd("ContextGroupSync")
     end, { desc = "Sync LLM context" })
+  end
+
+  -- Call code2prompt on all open buffers
+  if keymaps.code2prompt then
+    vim.keymap.set("n", keymaps.code2prompt, function()
+      require("context-groups").call_code2prompt()
+    end, { desc = "Copy buffer contents to clipboard in formatted way" })
   end
 end
 

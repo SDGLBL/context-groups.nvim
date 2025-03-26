@@ -4,6 +4,7 @@
 ---@field init_llm? string Keymap to initialize LLM context
 ---@field select_profile? string Keymap to select LLM context profile
 ---@field update_llm? string Keymap to update LLM context
+---@field code2prompt? string Keymap to copy buffer contents to clipboard in a formatted way
 
 ---@class ImportPreferences
 ---@field show_stdlib boolean Show standard library imports
@@ -40,6 +41,7 @@ local DEFAULT_CONFIG = {
     init_llm = "<leader>ci",
     select_profile = "<leader>cs",
     update_llm = "<leader>cr",
+    code2prompt = "<leader>cy",
   },
   storage_path = vim.fn.stdpath("data") .. "/context-groups",
   import_prefs = {

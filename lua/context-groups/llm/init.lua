@@ -26,8 +26,8 @@ local utils = require("context-groups.utils")
 ---@field outline_files string[] Files to include in outlines
 
 ---@class LLMContext
----@field private root string Project root directory
----@field profile_manager ProfileManager Profile manager instance
+---@field root string Project root directory
+---@field private profile_manager ProfileManager Profile manager instance
 local LLMContext = {}
 LLMContext.__index = LLMContext
 

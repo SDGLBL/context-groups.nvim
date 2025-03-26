@@ -159,6 +159,10 @@ COMMANDS                                                  *context-groups-comman
 :ContextGroupToggleExternal            
     Toggle visibility of external dependencies.
 
+                                                         *:ContextGroupCode2Prompt*
+:ContextGroupCode2Prompt
+    Copy contents of open buffers to clipboard in a formatted way.
+
 ================================================================================
 MAPPINGS                                                  *context-groups-mappings*
 
@@ -169,6 +173,7 @@ Normal mode mappings:
 `<leader>ca`                   Add file to context group
 `<leader>cs`                   Show current context group
 `<leader>ci`                   Add imports to context group
+`<leader>cy`                   Copy buffer contents to clipboard in formatted way
 
 Telescope picker mappings:
 
@@ -202,6 +207,7 @@ keymaps                                            *context-groups-keymaps*
         add_context = "<leader>ca",
         show_context = "<leader>cs",
         add_imports = "<leader>ci",
+        code2prompt = "<leader>cy",
       }
 <
 
@@ -318,6 +324,13 @@ show_context_group()                        *context-groups.show_context_group()
 
 show_imports_picker()                      *context-groups.show_imports_picker()*
     Show imports picker.
+
+call_code2prompt()                        *context-groups.call_code2prompt()*
+    Copy contents of open buffers to clipboard in a formatted way.
+    Format includes project name and file paths with their contents.
+
+    Returns: ~
+        boolean   Success status
 
 ================================================================================
 EXTENSIONS                                              *context-groups-extensions*

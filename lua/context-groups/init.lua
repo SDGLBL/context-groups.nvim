@@ -141,4 +141,14 @@ function M.sync_llm_context()
   return false
 end
 
+-- Call code2prompt on all open buffers
+---@return boolean success
+function M.call_code2prompt()
+  -- Get LLM context to access open buffer files
+  local llm_ctx = M.get_llm_context()
+
+  -- Call code2prompt module to generate prompt
+  return require("context-groups.code2prompt").generate_prompt(llm_ctx)
+end
+
 return M

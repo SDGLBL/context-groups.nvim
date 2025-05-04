@@ -362,25 +362,25 @@ function M.setup_keymaps()
   end, { desc = "Show current context group" })
 
   -- Initialize LLM context
-  if keymaps.init_llm then
-    vim.keymap.set("n", keymaps.init_llm, function()
-      vim.cmd("ContextGroupInitLLM")
-    end, { desc = "Initialize LLM context" })
-  end
+  -- if keymaps.init_llm then
+  --   vim.keymap.set("n", keymaps.init_llm, function()
+  --     vim.cmd("ContextGroupInitLLM")
+  --   end, { desc = "Initialize LLM context" })
+  -- end
 
   -- Select profile
-  if keymaps.select_profile then
-    vim.keymap.set("n", keymaps.select_profile, function()
-      picker.show_profile_picker()
-    end, { desc = "Select LLM context profile" })
-  end
+  -- if keymaps.select_profile then
+  --   vim.keymap.set("n", keymaps.select_profile, function()
+  --     picker.show_profile_picker()
+  --   end, { desc = "Select LLM context profile" })
+  -- end
 
   -- Update LLM context
-  if keymaps.update_llm then
-    vim.keymap.set("n", keymaps.update_llm, function()
-      vim.cmd("ContextGroupSync")
-    end, { desc = "Sync LLM context" })
-  end
+  -- if keymaps.update_llm then
+  --   vim.keymap.set("n", keymaps.update_llm, function()
+  --     vim.cmd("ContextGroupSync")
+  --   end, { desc = "Sync LLM context" })
+  -- end
 
   -- Call code2prompt on all open buffers
   if keymaps.code2prompt then
@@ -414,3 +414,4 @@ function M.setup()
 end
 
 return M
+

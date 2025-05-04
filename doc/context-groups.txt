@@ -125,7 +125,7 @@ Basic Usage ~
    - Use `:ContextGroupClear` command
 
 6. Copy buffer contents to clipboard:
-   - Use `:ContextGroupCode2Prompt` command or press `<leader>cy`
+   - Use `:ContextGroupBuffer2Prompt` command or press `<leader>cy`
    - Contents are formatted with project name and file paths
 
 7. Get LSP diagnostics:
@@ -173,8 +173,8 @@ COMMANDS                                                  *context-groups-comman
 :ContextGroupToggleExternal            
     Toggle visibility of external dependencies.
 
-                                                         *:ContextGroupCode2Prompt*
-:ContextGroupCode2Prompt
+                                                         *:ContextGroupBuffer2Prompt*
+:ContextGroupBuffer2Prompt
     Copy contents of open buffers to clipboard in a formatted way.
 
                                                          *:ContextGroupLSPDiagnosticsCurrent*

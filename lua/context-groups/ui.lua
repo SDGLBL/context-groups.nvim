@@ -333,7 +333,7 @@ function M.register_commands()
   })
 
   -- code2prompt command
-  create_command("ContextGroupCode2Prompt", commands.code2prompt.generate, {
+  create_command("ContextGroupBuffer2Prompt", commands.code2prompt.generate, {
     desc = "Copy contents of open buffers to clipboard in a formatted way",
   })
 

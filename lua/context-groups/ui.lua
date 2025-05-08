@@ -244,6 +244,16 @@ local commands = {
     all = function()
       require("context-groups").get_lsp_diagnostics_all()
     end,
+    
+    -- Get current buffer with inline LSP diagnostics
+    inline_current = function()
+      require("context-groups").get_inline_lsp_diagnostics_current()
+    end,
+
+    -- Get all open buffers with inline LSP diagnostics
+    inline_all = function()
+      require("context-groups").get_inline_lsp_diagnostics_all()
+    end,
   },
 
   -- Buffer paths command
@@ -353,6 +363,15 @@ function M.register_commands()
   create_command("ContextGroupLSPDiagnosticsAll", commands.lsp_diagnostics.all, {
     desc = "Get LSP diagnostics for all open buffers and copy to clipboard",
   })
+  
+  -- LSP diagnostics inline commands
+  create_command("ContextGroupLSPDiagnosticsInlineCurrent", commands.lsp_diagnostics.inline_current, {
+    desc = "Get current buffer content with inline LSP diagnostics and copy to clipboard",
+  })
+
+  create_command("ContextGroupLSPDiagnosticsInlineAll", commands.lsp_diagnostics.inline_all, {
+    desc = "Get all open buffers content with inline LSP diagnostics and copy to clipboard",
+  })
 
   -- Buffer paths command
   create_command("ContextGroupCopyBufferPaths", commands.buffer_paths.copy, {
@@ -414,6 +433,20 @@ function M.setup_keymaps()
     vim.keymap.set("n", keymaps.lsp_diagnostics_all, function()
       require("context-groups").get_lsp_diagnostics_all()
     end, { desc = "Get LSP diagnostics for all open buffers" })
+  end
+
+  -- Get current buffer with inline LSP diagnostics
+  if keymaps.lsp_diagnostics_inline_current then
+    vim.keymap.set("n", keymaps.lsp_diagnostics_inline_current, function()
+      require("context-groups").get_inline_lsp_diagnostics_current()
+    end, { desc = "Get current buffer with inline LSP diagnostics" })
+  end
+
+  -- Get all buffers with inline LSP diagnostics
+  if keymaps.lsp_diagnostics_inline_all then
+    vim.keymap.set("n", keymaps.lsp_diagnostics_inline_all, function()
+      require("context-groups").get_inline_lsp_diagnostics_all()
+    end, { desc = "Get all buffers with inline LSP diagnostics" })
   end
 
   -- Copy buffer paths

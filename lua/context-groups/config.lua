@@ -7,6 +7,8 @@
 ---@field code2prompt? string Keymap to copy buffer contents to clipboard in a formatted way
 ---@field lsp_diagnostics_current? string Keymap to get LSP diagnostics for current buffer
 ---@field lsp_diagnostics_all? string Keymap to get LSP diagnostics for all open buffers
+---@field lsp_diagnostics_inline_current? string Keymap to get current buffer with inline LSP diagnostics
+---@field lsp_diagnostics_inline_all? string Keymap to get all buffers with inline LSP diagnostics
 ---@field buffer_paths? string Keymap to copy relative paths of all open buffers to clipboard
 
 ---@class ImportPreferences
@@ -47,6 +49,8 @@ local DEFAULT_CONFIG = {
     code2prompt = "<leader>cy",
     lsp_diagnostics_current = "<leader>cl",
     lsp_diagnostics_all = "<leader>cL",
+    lsp_diagnostics_inline_current = "<leader>cI",
+    lsp_diagnostics_inline_all = "<leader>cA",
     buffer_paths = "<leader>cp",
   },
   storage_path = vim.fn.stdpath("data") .. "/context-groups",

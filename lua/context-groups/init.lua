@@ -163,6 +163,18 @@ function M.get_lsp_diagnostics_all()
   return require("context-groups.lsp_diagnostics").get_all_buffer_diagnostics()
 end
 
+-- Get current buffer with inline LSP diagnostics
+---@return boolean success
+function M.get_inline_lsp_diagnostics_current()
+  return require("context-groups.lsp_diagnostics_inline").get_current_buffer_with_inline_diagnostics()
+end
+
+-- Get all buffers with inline LSP diagnostics
+---@return boolean success
+function M.get_inline_lsp_diagnostics_all()
+  return require("context-groups.lsp_diagnostics_inline").get_all_buffers_with_inline_diagnostics()
+end
+
 -- Copy the relative paths of all open buffers to clipboard
 ---@return boolean success
 function M.get_buffer_paths()

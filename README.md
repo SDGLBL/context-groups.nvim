@@ -14,6 +14,10 @@ Context Groups is a Neovim plugin designed to enhance AI-assisted coding by mana
 - Telescope integration for file selection and preview
 - LSP integration for intelligent imports
 - LLM Context integration for profile-based context management
+- Enhanced diagnostics and code sharing:
+  - Inline LSP diagnostics with code context
+  - Git diff integration for tracking changes
+  - Buffer path utilities for easy reference
 
 ## Installation
 
@@ -96,7 +100,14 @@ require('context-groups').setup({
    - Filter by external/stdlib using <C-e>/<C-t>
    - Select imports to add to context group
 
-4. Send context to LLM:
+4. Get enhanced code context:
+   - Copy buffer content with LSP diagnostics: `:ContextGroupLSPDiagnosticsInlineCurrent` or `<leader>cI`
+   - Copy all buffers with LSP diagnostics: `:ContextGroupLSPDiagnosticsInlineAll` or `<leader>cA`
+   - Copy buffer with Git diff comparison: `:ContextGroupGitDiffCurrent` or `<leader>cg`
+   - Copy all modified buffers with Git diffs: `:ContextGroupGitDiffAllModified` or `<leader>cG`
+   - Copy all buffer paths: `:ContextGroupCopyBufferPaths` or `<leader>cp`
+
+5. Send context to LLM:
    - Use built-in support for LLM Context
    - Initialize with `:ContextGroupInitLLM`
    - Select profiles with `:ContextGroupSwitchProfile`
@@ -133,6 +144,9 @@ Context Groups integrates with [LLM Context](https://github.com/cyberchitta/llm-
 
 ## Recent Updates
 
+- **May 2025**: Added Git diff integration for tracking file changes and comparing with Git history.
+- **May 2025**: Added inline LSP diagnostics feature for enhanced error visualization within code context.
+- **May 2025**: Added buffer paths utilities for easy reference and sharing.
 - **March 2025**: Enhanced profile creation to automatically use the "code" profile as a base for better reusability.
 - **February 2025**: Added support for YAML configuration in LLM Context integration. See [YAML Migration Guide](docs/yaml-migration.md) for details.
 - **February 2025**: Major refactoring to improve code organization and maintainability. See [REFACTORING.md](REFACTORING.md) for details.

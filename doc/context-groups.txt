@@ -129,9 +129,22 @@ Basic Usage ~
    - Contents are formatted with project name and file paths
 
 7. Get LSP diagnostics:
-   - For current buffer: `:ContextGroupLSPDiagnosticsCurrent` or `<leader>cl`
-   - For all open buffers: `:ContextGroupLSPDiagnosticsAll` or `<leader>cL`
+   - Standard format:
+     - For current buffer: `:ContextGroupLSPDiagnosticsCurrent` or `<leader>cl`
+     - For all open buffers: `:ContextGroupLSPDiagnosticsAll` or `<leader>cL`
+   - Inline format (errors displayed next to code lines):
+     - For current buffer: `:ContextGroupLSPDiagnosticsInlineCurrent` or `<leader>cI`
+     - For all open buffers: `:ContextGroupLSPDiagnosticsInlineAll` or `<leader>cA`
    - Diagnostics are copied to clipboard with code context
+
+8. Compare with Git:
+   - Current buffer: `:ContextGroupGitDiffCurrent` or `<leader>cg`
+   - All modified buffers: `:ContextGroupGitDiffAllModified` or `<leader>cG`
+   - Shows original version, current version and Git diff
+
+9. Copy buffer paths:
+   - All open buffers: `:ContextGroupCopyBufferPaths` or `<leader>cp`
+   - Paths are relative to project root
 
                                                     *context-groups-import-prefs*
 Import Preferences ~
@@ -185,6 +198,31 @@ COMMANDS                                                  *context-groups-comman
 :ContextGroupLSPDiagnosticsAll
     Get LSP diagnostics for all open buffers and copy to clipboard.
 
+                                                         *:ContextGroupLSPDiagnosticsInlineCurrent*
+:ContextGroupLSPDiagnosticsInlineCurrent
+    Get current buffer content with inline LSP diagnostics and copy to clipboard.
+    Displays errors and warnings directly next to the code lines they affect.
+
+                                                         *:ContextGroupLSPDiagnosticsInlineAll*
+:ContextGroupLSPDiagnosticsInlineAll
+    Get all open buffers content with inline LSP diagnostics and copy to clipboard.
+    Formats multiple files with diagnostics embedded in the code.
+
+                                                         *:ContextGroupGitDiffCurrent*
+:ContextGroupGitDiffCurrent
+    Get current buffer with Git diff comparison and copy to clipboard.
+    Shows original version from Git, current buffer version, and unified diff.
+
+                                                         *:ContextGroupGitDiffAllModified*
+:ContextGroupGitDiffAllModified
+    Get all modified buffers with Git diff comparison and copy to clipboard.
+    Only includes buffers that have changes compared to Git.
+
+                                                         *:ContextGroupCopyBufferPaths*
+:ContextGroupCopyBufferPaths
+    Copy relative paths of all open buffers to clipboard.
+    Paths are relative to project root for easy reference.
+
 ================================================================================
 MAPPINGS                                                  *context-groups-mappings*
 
@@ -198,6 +236,11 @@ Normal mode mappings:
 `<leader>cy`                   Copy buffer contents to clipboard in formatted way
 `<leader>cl`                   Get LSP diagnostics for current buffer
 `<leader>cL`                   Get LSP diagnostics for all open buffers
+`<leader>cI`                   Get current buffer with inline LSP diagnostics
+`<leader>cA`                   Get all buffers with inline LSP diagnostics
+`<leader>cg`                   Get current buffer with Git diff
+`<leader>cG`                   Get all modified buffers with Git diff
+`<leader>cp`                   Copy paths of all open buffers
 
 Telescope picker mappings:
 
@@ -234,6 +277,11 @@ keymaps                                            *context-groups-keymaps*
         code2prompt = "<leader>cy",
         lsp_diagnostics_current = "<leader>cl",
         lsp_diagnostics_all = "<leader>cL",
+        lsp_diagnostics_inline_current = "<leader>cI",
+        lsp_diagnostics_inline_all = "<leader>cA",
+        git_diff_current = "<leader>cg",
+        git_diff_all_modified = "<leader>cG",
+        buffer_paths = "<leader>cp",
       }
 <
 
@@ -368,6 +416,41 @@ get_lsp_diagnostics_current()          *context-groups.get_lsp_diagnostics_curre
 get_lsp_diagnostics_all()              *context-groups.get_lsp_diagnostics_all()*
     Get LSP diagnostics for all open buffers and copy to clipboard.
     Includes diagnostic severity, message, and code context for each buffer.
+
+    Returns: ~
+        boolean   Success status
+        
+get_inline_lsp_diagnostics_current()  *context-groups.get_inline_lsp_diagnostics_current()*
+    Get current buffer content with inline LSP diagnostics and copy to clipboard.
+    Errors and warnings are displayed directly next to the code lines they affect.
+
+    Returns: ~
+        boolean   Success status
+
+get_inline_lsp_diagnostics_all()     *context-groups.get_inline_lsp_diagnostics_all()*
+    Get all buffers content with inline LSP diagnostics and copy to clipboard.
+    Formats multiple files with diagnostics embedded in the code.
+
+    Returns: ~
+        boolean   Success status
+
+get_git_diff_current()              *context-groups.get_git_diff_current()*
+    Get current buffer with Git diff comparison and copy to clipboard.
+    Shows original version from Git, current buffer version, and unified diff.
+
+    Returns: ~
+        boolean   Success status
+
+get_git_diff_all_modified()         *context-groups.get_git_diff_all_modified()*
+    Get all modified buffers with Git diff comparison and copy to clipboard.
+    Only includes buffers that have changes compared to Git.
+
+    Returns: ~
+        boolean   Success status
+
+get_buffer_paths()                 *context-groups.get_buffer_paths()*
+    Copy paths of all open buffers to clipboard.
+    Paths are relative to project root for easy reference.
 
     Returns: ~
         boolean   Success status

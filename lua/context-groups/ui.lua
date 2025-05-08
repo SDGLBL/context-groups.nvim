@@ -244,7 +244,7 @@ local commands = {
     all = function()
       require("context-groups").get_lsp_diagnostics_all()
     end,
-    
+
     -- Get current buffer with inline LSP diagnostics
     inline_current = function()
       require("context-groups").get_inline_lsp_diagnostics_current()
@@ -253,6 +253,19 @@ local commands = {
     -- Get all open buffers with inline LSP diagnostics
     inline_all = function()
       require("context-groups").get_inline_lsp_diagnostics_all()
+    end,
+  },
+
+  -- Git diff commands
+  git_diff = {
+    -- Get Git diff for current buffer
+    current = function()
+      require("context-groups").get_git_diff_current()
+    end,
+
+    -- Get Git diff for all modified buffers
+    all_modified = function()
+      require("context-groups").get_git_diff_all_modified()
     end,
   },
 
@@ -363,7 +376,7 @@ function M.register_commands()
   create_command("ContextGroupLSPDiagnosticsAll", commands.lsp_diagnostics.all, {
     desc = "Get LSP diagnostics for all open buffers and copy to clipboard",
   })
-  
+
   -- LSP diagnostics inline commands
   create_command("ContextGroupLSPDiagnosticsInlineCurrent", commands.lsp_diagnostics.inline_current, {
     desc = "Get current buffer content with inline LSP diagnostics and copy to clipboard",
@@ -371,6 +384,15 @@ function M.register_commands()
 
   create_command("ContextGroupLSPDiagnosticsInlineAll", commands.lsp_diagnostics.inline_all, {
     desc = "Get all open buffers content with inline LSP diagnostics and copy to clipboard",
+  })
+
+  -- Git diff commands
+  create_command("ContextGroupGitDiffCurrent", commands.git_diff.current, {
+    desc = "Get current buffer with Git diff and copy to clipboard",
+  })
+
+  create_command("ContextGroupGitDiffAllModified", commands.git_diff.all_modified, {
+    desc = "Get all modified buffers with Git diff and copy to clipboard",
   })
 
   -- Buffer paths command
@@ -449,6 +471,20 @@ function M.setup_keymaps()
     end, { desc = "Get all buffers with inline LSP diagnostics" })
   end
 
+  -- Get current buffer with Git diff
+  if keymaps.git_diff_current then
+    vim.keymap.set("n", keymaps.git_diff_current, function()
+      require("context-groups").get_git_diff_current()
+    end, { desc = "Get current buffer with Git diff" })
+  end
+
+  -- Get all modified buffers with Git diff
+  if keymaps.git_diff_all_modified then
+    vim.keymap.set("n", keymaps.git_diff_all_modified, function()
+      require("context-groups").get_git_diff_all_modified()
+    end, { desc = "Get all modified buffers with Git diff" })
+  end
+
   -- Copy buffer paths
   if keymaps.buffer_paths then
     vim.keymap.set("n", keymaps.buffer_paths, function()
@@ -467,4 +503,3 @@ function M.setup()
 end
 
 return M
-

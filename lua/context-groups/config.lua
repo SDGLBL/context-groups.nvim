@@ -9,6 +9,8 @@
 ---@field lsp_diagnostics_all? string Keymap to get LSP diagnostics for all open buffers
 ---@field lsp_diagnostics_inline_current? string Keymap to get current buffer with inline LSP diagnostics
 ---@field lsp_diagnostics_inline_all? string Keymap to get all buffers with inline LSP diagnostics
+---@field git_diff_current? string Keymap to get current buffer with Git diff
+---@field git_diff_all_modified? string Keymap to get all modified buffers with Git diff
 ---@field buffer_paths? string Keymap to copy relative paths of all open buffers to clipboard
 
 ---@class ImportPreferences
@@ -51,6 +53,8 @@ local DEFAULT_CONFIG = {
     lsp_diagnostics_all = "<leader>cL",
     lsp_diagnostics_inline_current = "<leader>cI",
     lsp_diagnostics_inline_all = "<leader>cA",
+    git_diff_current = "<leader>cg",
+    git_diff_all_modified = "<leader>cG",
     buffer_paths = "<leader>cp",
   },
   storage_path = vim.fn.stdpath("data") .. "/context-groups",

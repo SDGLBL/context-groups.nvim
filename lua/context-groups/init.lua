@@ -163,4 +163,44 @@ function M.get_lsp_diagnostics_all()
   return require("context-groups.lsp_diagnostics").get_all_buffer_diagnostics()
 end
 
+-- Copy the relative paths of all open buffers to clipboard
+---@return boolean success
+function M.get_buffer_paths()
+  local llm_ctx = M.get_llm_context()
+  local root = llm_ctx.root
+  local buffer_paths = {}
+  
+  -- Get all open buffers
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].buftype == "" then
+      local path = vim.api.nvim_buf_get_name(bufnr)
+      
+      -- Skip empty buffers
+      if path and path ~= "" and vim.fn.filereadable(path) == 1 then
+        path = vim.fn.fnamemodify(path, ":p")
+        if vim.startswith(path, root) then
+          -- Convert to relative path
+          path = path:sub(#root + 2) -- +2 to remove the trailing slash
+          table.insert(buffer_paths, path)
+        end
+      end
+    end
+  end
+  
+  if #buffer_paths == 0 then
+    vim.notify("No valid open buffer files found", vim.log.levels.ERROR)
+    return false
+  end
+  
+  -- Sort paths for consistency
+  table.sort(buffer_paths)
+  
+  -- Copy to clipboard
+  local text = table.concat(buffer_paths, "\n")
+  vim.fn.setreg("+", text)
+  
+  vim.notify(string.format("Paths of %d open buffers copied to clipboard", #buffer_paths), vim.log.levels.INFO)
+  return true
+end
+
 return M

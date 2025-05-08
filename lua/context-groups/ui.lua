@@ -245,6 +245,14 @@ local commands = {
       require("context-groups").get_lsp_diagnostics_all()
     end,
   },
+
+  -- Buffer paths command
+  buffer_paths = {
+    -- Copy relative paths of all open buffers to clipboard
+    copy = function()
+      require("context-groups").get_buffer_paths()
+    end,
+  },
 }
 
 -- Command factory for creating commands
@@ -345,6 +353,11 @@ function M.register_commands()
   create_command("ContextGroupLSPDiagnosticsAll", commands.lsp_diagnostics.all, {
     desc = "Get LSP diagnostics for all open buffers and copy to clipboard",
   })
+
+  -- Buffer paths command
+  create_command("ContextGroupCopyBufferPaths", commands.buffer_paths.copy, {
+    desc = "Copy relative paths of all open buffers to clipboard",
+  })
 end
 
 -- Set up keymaps
@@ -401,6 +414,13 @@ function M.setup_keymaps()
     vim.keymap.set("n", keymaps.lsp_diagnostics_all, function()
       require("context-groups").get_lsp_diagnostics_all()
     end, { desc = "Get LSP diagnostics for all open buffers" })
+  end
+
+  -- Copy buffer paths
+  if keymaps.buffer_paths then
+    vim.keymap.set("n", keymaps.buffer_paths, function()
+      require("context-groups").get_buffer_paths()
+    end, { desc = "Copy relative paths of all open buffers to clipboard" })
   end
 end
 

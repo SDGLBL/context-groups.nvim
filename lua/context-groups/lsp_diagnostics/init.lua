@@ -1,134 +1,131 @@
 -- lua/context-groups/lsp_diagnostics/init.lua
--- Module for getting LSP diagnostics information
+-- LSP diagnostics module
+
+local core = require("context-groups.core")
 
 local M = {}
 
--- Severity mapping
-local severity_labels = {
-  [1] = "ERROR",
-  [2] = "WARNING",
-  [3] = "INFORMATION",
-  [4] = "HINT",
-}
-
--- Format diagnostics for a buffer
----@param bufnr number Buffer number
----@param filetype string File type
----@return string[] formatted_diagnostics
-local function format_buffer_diagnostics(bufnr, filetype)
+-- Get LSP diagnostics for current buffer
+---@param bufnr? number Buffer number
+---@return string|nil diagnostics Formatted diagnostics
+local function get_buffer_diagnostics(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  
+  -- Get buffer name and check if valid
   local buf_name = vim.api.nvim_buf_get_name(bufnr)
-  -- Get relative path if possible
-  local llm_ctx = require("context-groups").get_llm_context()
+  if buf_name == "" then
+    return nil
+  end
+  
+  -- Convert to relative path
   local path = buf_name
-  if vim.startswith(buf_name, llm_ctx.root) then
-    path = buf_name:sub(#llm_ctx.root + 2) -- +2 to remove the trailing slash
+  local project_root = core.find_root(buf_name)
+  if vim.startswith(buf_name, project_root) then
+    path = buf_name:sub(#project_root + 2) -- +2 to remove the trailing slash
   end
 
-  local diagnostics = vim.diagnostic.get(bufnr, {
-    severity = { min = vim.diagnostic.severity.HINT },
-  })
-
-  if #diagnostics == 0 then
-    return { string.format("File: %s\nNo LSP diagnostics found.", path) }
+  -- Get diagnostics for buffer
+  local diags = vim.diagnostic.get(bufnr)
+  if not diags or #diags == 0 then
+    return string.format("## %s\nNo diagnostics found", path)
   end
 
-  local formatted = {}
-  table.insert(formatted, string.format("File: %s", path))
-
-  -- Add code to the diagnostics
-  for _, diagnostic in ipairs(diagnostics) do
-    -- Get the code at the diagnostic position
-    local lines = {}
-    for i = diagnostic.lnum, diagnostic.end_lnum do
-      local line_content = vim.api.nvim_buf_get_lines(bufnr, i, i + 1, false)[1] or ""
-      table.insert(lines, string.format("%d: %s", i + 1, vim.trim(line_content)))
+  -- Sort diagnostics by severity
+  table.sort(diags, function(a, b)
+    if a.severity == b.severity then
+      if a.lnum == b.lnum then
+        return a.col < b.col
+      end
+      return a.lnum < b.lnum
     end
+    return a.severity < b.severity
+  end)
 
-    -- Format the diagnostic
-    table.insert(
-      formatted,
-      string.format(
-        [[
-Severity: %s
-Position: Line %d, Column %d
-LSP Message: %s
-Code:
-```%s
-%s
-```]],
-        severity_labels[diagnostic.severity] or "UNKNOWN",
-        diagnostic.lnum + 1, -- Convert to 1-based line number
-        diagnostic.col + 1, -- Convert to 1-based column
-        diagnostic.message,
-        filetype,
-        table.concat(lines, "\n")
-      )
-    )
+  -- Construct output
+  local result = { string.format("## %s\n", path) }
+  
+  for _, diag in ipairs(diags) do
+    local severity = {"Error", "Warning", "Info", "Hint"}[diag.severity]
+    local line = diag.lnum + 1 -- Convert to 1-based line number
+    local col = diag.col + 1 -- Convert to 1-based column number
+    local message = diag.message:gsub("\n", " ")
+    
+    -- Get a snippet of code around the diagnostic
+    local context_start = math.max(0, diag.lnum - 1)
+    local context_end = math.min(vim.api.nvim_buf_line_count(bufnr) - 1, diag.lnum + 1)
+    local context_lines = vim.api.nvim_buf_get_lines(bufnr, context_start, context_end + 1, false)
+    
+    -- Add diagnostic location and message
+    table.insert(result, string.format("**%s** at line %d, column %d: %s", severity, line, col, message))
+    
+    -- Add code context with line numbers
+    if #context_lines > 0 then
+      table.insert(result, "```")
+      for i, cline in ipairs(context_lines) do
+        local lnum = context_start + i
+        local prefix = lnum == diag.lnum and ">" or " "
+        table.insert(result, string.format("%s %3d: %s", prefix, lnum + 1, cline))
+      end
+      table.insert(result, "```\n")
+    end
   end
-
-  return formatted
+  
+  return table.concat(result, "\n")
 end
 
--- Generate diagnostic information for the current buffer
+-- Get diagnostics for current buffer and copy to clipboard
 ---@return boolean success
 function M.get_current_buffer_diagnostics()
   local bufnr = vim.api.nvim_get_current_buf()
-
-  -- Check if buffer is valid
-  if not vim.api.nvim_buf_is_valid(bufnr) then
-    vim.notify("Invalid buffer", vim.log.levels.ERROR)
+  local diagnostics = get_buffer_diagnostics(bufnr)
+  
+  if not diagnostics then
+    vim.notify("No diagnostics available for current buffer", vim.log.levels.WARN)
     return false
   end
-
-  local filetype = vim.bo[bufnr].filetype
-  local formatted = format_buffer_diagnostics(bufnr, filetype)
-
+  
   -- Copy to clipboard
-  local text = table.concat(formatted, "\n\n")
-  vim.fn.setreg("+", text)
-
-  vim.notify("LSP diagnostics from current buffer copied to clipboard", vim.log.levels.INFO)
+  vim.fn.setreg("+", diagnostics)
+  vim.notify("LSP diagnostics for current buffer copied to clipboard", vim.log.levels.INFO)
   return true
 end
 
--- Generate diagnostic information for all open buffers
+-- Get diagnostics for all open buffers and copy to clipboard
 ---@return boolean success
 function M.get_all_buffer_diagnostics()
-  local llm_ctx = require("context-groups").get_llm_context()
-  local all_formatted = {}
+  local buffer_paths, project_root = core.get_open_buffer_paths()
+  
+  if #buffer_paths == 0 then
+    vim.notify("No open buffer files found", vim.log.levels.ERROR)
+    return false
+  end
+  
+  -- Build combined diagnostics
+  local results = {
+    string.format("# LSP Diagnostics for project %s\n", vim.fn.fnamemodify(project_root, ":t")),
+  }
+  
   local count = 0
-
-  -- Process all open buffers
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+  for _, _ in ipairs(buffer_paths) do
+    count = count + 1
+  end
+  
+  for _, _ in ipairs(vim.api.nvim_list_bufs()) do
+    local bufnr = _
     if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].buftype == "" then
-      local path = vim.api.nvim_buf_get_name(bufnr)
-
-      -- Skip empty buffers
-      if path and path ~= "" and vim.fn.filereadable(path) == 1 then
-        local filetype = vim.bo[bufnr].filetype
-        local buffer_diagnostics = format_buffer_diagnostics(bufnr, filetype)
-
-        if #buffer_diagnostics > 0 then
-          count = count + 1
-          table.insert(all_formatted, table.concat(buffer_diagnostics, "\n\n"))
-        end
+      local diags = get_buffer_diagnostics(bufnr)
+      if diags then
+        table.insert(results, diags)
+        table.insert(results, "---\n")
       end
     end
   end
-
-  if count == 0 then
-    vim.notify("No LSP diagnostics found in any open buffer", vim.log.levels.INFO)
-    return false
-  end
-
-  -- Add header
-  local header = "# LSP Diagnostics from Open Buffers\n\n"
-  local text = header .. table.concat(all_formatted, "\n\n---\n\n")
-
+  
+  local final_output = table.concat(results, "\n")
+  
   -- Copy to clipboard
-  vim.fn.setreg("+", text)
-
-  vim.notify(string.format("LSP diagnostics from %d buffers copied to clipboard", count), vim.log.levels.INFO)
+  vim.fn.setreg("+", final_output)
+  vim.notify(string.format("LSP diagnostics for %d buffers copied to clipboard", count), vim.log.levels.INFO)
   return true
 end
 

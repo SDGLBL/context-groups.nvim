@@ -1,9 +1,6 @@
 ---@class ContextGroupsKeymaps
 ---@field add_context string Keymap to add context file
 ---@field show_context string Keymap to show context group
----@field init_llm? string Keymap to initialize LLM context
----@field select_profile? string Keymap to select LLM context profile
----@field update_llm? string Keymap to update LLM context
 ---@field code2prompt? string Keymap to copy buffer contents to clipboard in a formatted way
 ---@field lsp_diagnostics_current? string Keymap to get LSP diagnostics for current buffer
 ---@field lsp_diagnostics_all? string Keymap to get LSP diagnostics for all open buffers
@@ -18,10 +15,6 @@
 ---@field show_external boolean Show external dependencies
 ---@field ignore_patterns string[] Patterns to ignore when importing
 
----@class YamlParserConfig
----@field debug boolean Enable debug mode for YAML parser
----@field block_style boolean Use block style for YAML output
-
 ---@class ContextGroupsConfig
 ---@field keymaps ContextGroupsKeymaps Key mappings configuration
 ---@field storage_path? string Path to store plugin data
@@ -32,22 +25,14 @@
 ---@field on_context_change? function Called when context group changes
 ---@field language_config table<string, table> Language specific configurations
 ---@field export table<string, any> Export configuration
----@field yaml_parser YamlParserConfig YAML parser configuration
 
 local M = {}
 
 -- Default configuration
 local DEFAULT_CONFIG = {
-  yaml_parser = {
-    debug = false,
-    block_style = true,
-  },
   keymaps = {
     add_context = "<leader>ca",
-    show_context = "<leader>cS",
-    init_llm = "<leader>ci",
-    select_profile = "<leader>cs",
-    update_llm = "<leader>cr",
+    show_context = "<leader>cs",
     code2prompt = "<leader>cy",
     lsp_diagnostics_current = "<leader>cl",
     lsp_diagnostics_all = "<leader>cL",
@@ -87,9 +72,9 @@ local DEFAULT_CONFIG = {
     },
   },
   export = {
-    max_tree_depth = 4, -- 项目树的最大深度
-    show_git_changes = true, -- 是否显示git变更
-    exclude_patterns = { -- 要排除的文件模式
+    max_tree_depth = 4, -- Maximum depth of project tree
+    show_git_changes = true, -- Show git changes
+    exclude_patterns = { -- File patterns to exclude
       "__pycache__",
       "node_modules",
       ".git",
@@ -144,7 +129,7 @@ end
 ---@param prefs ImportPreferences
 function M.update_import_prefs(prefs)
   config.import_prefs = vim.tbl_deep_extend("force", config.import_prefs, prefs)
-  -- 触发回调
+  -- Trigger callback
   if config.on_context_change then
     config.on_context_change()
   end
@@ -158,3 +143,4 @@ function M.get_storage_path(component)
 end
 
 return M
+

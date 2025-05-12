@@ -64,11 +64,6 @@ function M.show_context_group()
   require("context-groups.picker").show_context_group()
 end
 
--- Show profile picker
-function M.show_profile_picker()
-  require("context-groups.picker").show_profile_picker()
-end
-
 -- Show imports picker
 function M.show_imports_picker()
   require("context-groups.picker").show_imports_picker()
@@ -81,74 +76,11 @@ function M.export_contents(opts)
   return core.export.export_contents(opts)
 end
 
--- LLM Context Integration API
-
--- Get LLM Context for current project
----@return LLMContext
-function M.get_llm_context()
-  local root = core.find_root(vim.fn.expand("%:p"))
-  return require("context-groups.llm").new(root)
-end
-
--- Initialize LLM Context for current project
----@return boolean success
-function M.init_llm_context()
-  local llm_ctx = M.get_llm_context()
-  return llm_ctx:is_initialized() or llm_ctx:initialize()
-end
-
--- Get available LLM Context profiles
----@return string[] profile_names
-function M.get_llm_profiles()
-  local llm_ctx = M.get_llm_context()
-  return llm_ctx:get_profiles()
-end
-
--- Switch to LLM Context profile
----@param profile string Profile name
----@return boolean success
-function M.switch_llm_profile(profile)
-  local llm_ctx = M.get_llm_context()
-  return llm_ctx:switch_profile(profile)
-end
-
--- Create LLM Context profile from current context
----@param name string Profile name
----@return boolean success
-function M.create_llm_profile(name)
-  local llm_ctx = M.get_llm_context()
-  local context_files = llm_ctx:get_open_buffer_files()
-  return llm_ctx:create_profile_from_context(name, context_files)
-end
-
--- Sync context group with LLM Context
----@return boolean success
-function M.sync_llm_context()
-  local llm_ctx = M.get_llm_context()
-  local current_profile = llm_ctx:get_current_profile()
-
-  if not current_profile then
-    vim.notify("No active profile", vim.log.levels.WARN)
-    return false
-  end
-
-  local success = llm_ctx:update_profile_with_buffers(current_profile)
-  if success then
-    llm_ctx:update_files()
-    return true
-  end
-
-  return false
-end
-
 -- Call code2prompt on all open buffers
 ---@return boolean success
 function M.call_code2prompt()
-  -- Get LLM context to access open buffer files
-  local llm_ctx = M.get_llm_context()
-
   -- Call code2prompt module to generate prompt
-  return require("context-groups.code2prompt").generate_prompt(llm_ctx)
+  return require("context-groups.code2prompt").generate_prompt()
 end
 
 -- Get LSP diagnostics for current buffer
@@ -190,34 +122,12 @@ end
 -- Copy the relative paths of all open buffers to clipboard
 ---@return boolean success
 function M.get_buffer_paths()
-  local llm_ctx = M.get_llm_context()
-  local root = llm_ctx.root
-  local buffer_paths = {}
-
-  -- Get all open buffers
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].buftype == "" then
-      local path = vim.api.nvim_buf_get_name(bufnr)
-
-      -- Skip empty buffers
-      if path and path ~= "" and vim.fn.filereadable(path) == 1 then
-        path = vim.fn.fnamemodify(path, ":p")
-        if vim.startswith(path, root) then
-          -- Convert to relative path
-          path = path:sub(#root + 2) -- +2 to remove the trailing slash
-          table.insert(buffer_paths, path)
-        end
-      end
-    end
-  end
+  local buffer_paths, root = core.get_open_buffer_paths()
 
   if #buffer_paths == 0 then
     vim.notify("No valid open buffer files found", vim.log.levels.ERROR)
     return false
   end
-
-  -- Sort paths for consistency
-  table.sort(buffer_paths)
 
   -- Copy to clipboard
   local text = table.concat(buffer_paths, "\n")
@@ -228,3 +138,4 @@ function M.get_buffer_paths()
 end
 
 return M
+

@@ -60,130 +60,6 @@ local commands = {
     end,
   },
 
-  -- LLM Context integration commands
-  llm = {
-    -- Initialize LLM Context with additional profiles
-    init = function()
-      -- Use the enhanced initialization module
-      local init_llm = require("context-groups.llm.init_llm")
-      init_llm.init_llm_context()
-    end,
-
-    -- List available profiles
-    list_profiles = function()
-      local LLMContext = require("context-groups.llm")
-      local project = require("context-groups.core")
-
-      local root = project.find_root(vim.fn.expand("%:p"))
-      local llm_ctx = LLMContext.new(root)
-
-      if not llm_ctx:is_initialized() then
-        vim.notify("LLM Context not initialized. Run :ContextGroupInitLLM first.", vim.log.levels.ERROR)
-        return
-      end
-
-      local profiles = llm_ctx:get_profiles()
-      if #profiles == 0 then
-        vim.notify("No profiles found", vim.log.levels.INFO)
-        return
-      end
-
-      local current = llm_ctx:get_current_profile()
-      local lines = { "Available profiles:" }
-      for _, profile in ipairs(profiles) do
-        table.insert(lines, string.format("%s %s", profile == current and "*" or " ", profile))
-      end
-      vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
-    end,
-
-    -- Switch profile
-    switch_profile = function(args)
-      local LLMContext = require("context-groups.llm")
-      local project = require("context-groups.core")
-
-      local root = project.find_root(vim.fn.expand("%:p"))
-      local llm_ctx = LLMContext.new(root)
-
-      if not llm_ctx:is_initialized() then
-        vim.notify("LLM Context not initialized. Run :ContextGroupInitLLM first.", vim.log.levels.ERROR)
-        return
-      end
-
-      local profile = args.args
-      if profile == "" then
-        -- Show profile picker
-        picker.show_profile_picker()
-      else
-        -- Switch to specified profile
-        if llm_ctx:switch_profile(profile) then
-          vim.notify(string.format("Switched to profile: %s", profile))
-        end
-      end
-    end,
-
-    -- Create profile
-    create_profile = function(args)
-      local LLMContext = require("context-groups.llm")
-      local project = require("context-groups.core")
-
-      local root = project.find_root(vim.fn.expand("%:p"))
-      local llm_ctx = LLMContext.new(root)
-
-      if not llm_ctx:is_initialized() then
-        vim.notify("LLM Context not initialized. Run :ContextGroupInitLLM first.", vim.log.levels.ERROR)
-        return
-      end
-
-      local name = args.args
-      if name == "" then
-        vim.notify("Profile name required", vim.log.levels.ERROR)
-        return
-      end
-
-      -- Create profile from current context
-      if llm_ctx:create_profile_from_context(name, llm_ctx:get_open_buffer_files()) then
-        vim.notify(string.format("Created profile '%s' from current context group", name))
-
-        -- Switch to new profile if requested
-        if args.bang then
-          if llm_ctx:switch_profile(name) then
-            vim.notify(string.format("Switched to profile: %s", name))
-          end
-        end
-      else
-        vim.notify("Failed to create profile", vim.log.levels.ERROR)
-      end
-    end,
-
-    -- Sync context group with current profile
-    sync = function()
-      local LLMContext = require("context-groups.llm")
-      local project = require("context-groups.core")
-
-      local root = project.find_root(vim.fn.expand("%:p"))
-      local llm_ctx = LLMContext.new(root)
-
-      if not llm_ctx:is_initialized() then
-        vim.notify("LLM Context not initialized. Run :ContextGroupInitLLM first.", vim.log.levels.ERROR)
-        return
-      end
-
-      local current_profile = llm_ctx:get_current_profile()
-      if not current_profile then
-        vim.notify("No active profile", vim.log.levels.WARN)
-        return
-      end
-
-      local success = llm_ctx:update_profile_with_buffers(current_profile)
-      if success then
-        llm_ctx:update_files()
-        vim.notify("Context group synced with current profile", vim.log.levels.INFO)
-      else
-        vim.notify("Failed to sync context group", vim.log.levels.ERROR)
-      end
-    end,
-  },
-
   -- Preference toggle commands
   prefs = {
     -- Toggle stdlib visibility
@@ -313,37 +189,6 @@ function M.register_commands()
     desc = "Clear current context group",
   })
 
-  -- LLM Context commands
-  create_command("ContextGroupInitLLM", commands.llm.init, {
-    desc = "Initialize LLM Context for the project with additional profiles",
-  })
-
-  create_command("ContextGroupListProfiles", commands.llm.list_profiles, {
-    desc = "List available LLM Context profiles",
-  })
-
-  create_command("ContextGroupSwitchProfile", commands.llm.switch_profile, {
-    nargs = "?",
-    complete = function()
-      local LLMContext = require("context-groups.llm")
-      local project = require("context-groups.core")
-      local root = project.find_root(vim.fn.expand("%:p"))
-      local llm_ctx = LLMContext.new(root)
-      return llm_ctx and llm_ctx:get_profiles() or {}
-    end,
-    desc = "Switch LLM Context profile",
-  })
-
-  create_command("ContextGroupCreateProfile", commands.llm.create_profile, {
-    nargs = 1,
-    bang = true,
-    desc = "Create new LLM Context profile from current context group (! to switch)",
-  })
-
-  create_command("ContextGroupSync", commands.llm.sync, {
-    desc = "Sync context group with current profile",
-  })
-
   -- Preference commands
   create_command("ContextGroupToggleStdlib", commands.prefs.toggle_stdlib, {
     desc = "Toggle visibility of standard library imports",
@@ -415,27 +260,6 @@ function M.setup_keymaps()
     picker.show_context_group()
   end, { desc = "Show current context group" })
 
-  -- Initialize LLM context
-  -- if keymaps.init_llm then
-  --   vim.keymap.set("n", keymaps.init_llm, function()
-  --     vim.cmd("ContextGroupInitLLM")
-  --   end, { desc = "Initialize LLM context" })
-  -- end
-
-  -- Select profile
-  -- if keymaps.select_profile then
-  --   vim.keymap.set("n", keymaps.select_profile, function()
-  --     picker.show_profile_picker()
-  --   end, { desc = "Select LLM context profile" })
-  -- end
-
-  -- Update LLM context
-  -- if keymaps.update_llm then
-  --   vim.keymap.set("n", keymaps.update_llm, function()
-  --     vim.cmd("ContextGroupSync")
-  --   end, { desc = "Sync LLM context" })
-  -- end
-
   -- Call code2prompt on all open buffers
   if keymaps.code2prompt then
     vim.keymap.set("n", keymaps.code2prompt, function()
@@ -503,3 +327,4 @@ function M.setup()
 end
 
 return M
+

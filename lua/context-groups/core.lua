@@ -453,6 +453,36 @@ function M.get_context_stats(target_bufnr)
   return stats
 end
 
+---Get paths of all open buffers
+---@return string[] paths List of relative file paths from project root
+---@return string root Project root directory
+function M.get_open_buffer_paths()
+  local root = M.find_root(vim.fn.expand("%:p"))
+  local buffer_paths = {}
+
+  -- Get all open buffers
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].buftype == "" then
+      local path = vim.api.nvim_buf_get_name(bufnr)
+
+      -- Skip empty buffers
+      if path and path ~= "" and vim.fn.filereadable(path) == 1 then
+        path = vim.fn.fnamemodify(path, ":p")
+        if vim.startswith(path, root) then
+          -- Convert to relative path
+          path = path:sub(#root + 2) -- +2 to remove the trailing slash
+          table.insert(buffer_paths, path)
+        end
+      end
+    end
+  end
+
+  -- Sort paths for consistency
+  table.sort(buffer_paths)
+
+  return buffer_paths, root
+end
+
 -- Export functionality (simplified from core/export.lua)
 M.export = {}
 
@@ -715,3 +745,4 @@ function M.export.export_contents(opts)
 end
 
 return M
+

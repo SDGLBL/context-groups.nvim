@@ -73,7 +73,6 @@ Setup with custom configuration: >
     keymaps = {
       add_context = "<leader>ca",
       show_context = "<leader>cs",
-      add_imports = "<leader>ci",
       code2prompt = "<leader>cy",
       lsp_diagnostics_current = "<leader>cl",
       lsp_diagnostics_all = "<leader>cL",
@@ -113,7 +112,7 @@ Basic Usage ~
    - Open files in split with <C-v>
 
 3. Add imports to context group:
-   - Use `:ContextGroupAddImports` command or press `<leader>ci`
+   - Use `:ContextGroupAddImports` command
    - Filter by external/stdlib using <C-e>/<C-t>
    - Select imports to add to context group
 
@@ -232,7 +231,6 @@ Normal mode mappings:
 
 `<leader>ca`                   Add file to context group
 `<leader>cs`                   Show current context group
-`<leader>ci`                   Add imports to context group
 `<leader>cy`                   Copy buffer contents to clipboard in formatted way
 `<leader>cl`                   Get LSP diagnostics for current buffer
 `<leader>cL`                   Get LSP diagnostics for all open buffers
@@ -273,7 +271,6 @@ keymaps                                            *context-groups-keymaps*
       {
         add_context = "<leader>ca",
         show_context = "<leader>cs",
-        add_imports = "<leader>ci",
         code2prompt = "<leader>cy",
         lsp_diagnostics_current = "<leader>cl",
         lsp_diagnostics_all = "<leader>cL",

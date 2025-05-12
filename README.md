@@ -13,7 +13,6 @@ Context Groups is a Neovim plugin designed to enhance AI-assisted coding by mana
 - Automatic project root detection
 - Telescope integration for file selection and preview
 - LSP integration for intelligent imports
-- LLM Context integration for profile-based context management
 - Enhanced diagnostics and code sharing:
   - Inline LSP diagnostics with code context
   - Git diff integration for tracking changes
@@ -60,8 +59,9 @@ require('context-groups').setup({
   keymaps = {
     add_context = "<leader>ca",
     show_context = "<leader>cs",
-    add_imports = "<leader>ci",
-    update_llm = "<leader>cr",
+    code2prompt = "<leader>cy",
+    lsp_diagnostics_current = "<leader>cl",
+    lsp_diagnostics_all = "<leader>cL",
   },
   storage_path = vim.fn.stdpath("data") .. "/context-groups",
   import_prefs = {
@@ -96,7 +96,7 @@ require('context-groups').setup({
    - Open files in split with <C-v>
 
 3. Add imports to context group:
-   - Use `:ContextGroupAddImports` command or press `<leader>ci`
+   - Use `:ContextGroupAddImports` command
    - Filter by external/stdlib using <C-e>/<C-t>
    - Select imports to add to context group
 
@@ -107,49 +107,16 @@ require('context-groups').setup({
    - Copy all modified buffers with Git diffs: `:ContextGroupGitDiffAllModified` or `<leader>cG`
    - Copy all buffer paths: `:ContextGroupCopyBufferPaths` or `<leader>cp`
 
-5. Send context to LLM:
-   - Use built-in support for LLM Context
-   - Initialize with `:ContextGroupInitLLM`
-   - Select profiles with `:ContextGroupSwitchProfile`
-   - Sync context with `:ContextGroupSync`
-
-## LLM Context Integration
-
-Context Groups integrates with [LLM Context](https://github.com/cyberchitta/llm-context.py/) to provide advanced context management for LLMs. The plugin now supports the latest YAML configuration format along with backward compatibility for TOML.
-
-### Setup
-
-1. Install LLM Context:
-   ```bash
-   uv tool install llm-context
-   ```
-
-2. Initialize in your project:
-   ```
-   :ContextGroupInitLLM
-   ```
-
-3. Manage profiles:
-   ```
-   :ContextGroupSwitchProfile            # Switch profiles
-   :ContextGroupCreateProfile {name}     # Create new profile
-   :ContextGroupSync                     # Sync context files
-   ```
-
-   When creating a new profile, it automatically inherits from the "code" base profile, ensuring consistent settings while allowing for customization. For example:
-   ```
-   :ContextGroupCreateProfile my-feature
-   ```
-   This creates a new profile named "my-feature" with the same settings as the "code" profile but with your current buffer files included.
+5. Format code for AI tools:
+   - Use `:ContextGroupBuffer2Prompt` or `<leader>cy` to format open buffer contents for sharing with AI tools
 
 ## Recent Updates
 
 - **May 2025**: Added Git diff integration for tracking file changes and comparing with Git history.
 - **May 2025**: Added inline LSP diagnostics feature for enhanced error visualization within code context.
 - **May 2025**: Added buffer paths utilities for easy reference and sharing.
-- **March 2025**: Enhanced profile creation to automatically use the "code" profile as a base for better reusability.
-- **February 2025**: Added support for YAML configuration in LLM Context integration. See [YAML Migration Guide](docs/yaml-migration.md) for details.
-- **February 2025**: Major refactoring to improve code organization and maintainability. See [REFACTORING.md](REFACTORING.md) for details.
+- **March 2025**: Enhanced buffer formatting for better AI tool integration.
+- **February 2025**: Major refactoring to improve code organization and maintainability.
 
 ## License
 

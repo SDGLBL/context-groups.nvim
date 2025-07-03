@@ -67,7 +67,7 @@ local function get_buffer_with_inline_diagnostics(bufnr)
         local message = diag.message:gsub("\n", " ")
 
         -- Create position indicator with caret (^)
-        local indent = string.rep(" ", 6 + col - 1) -- 6 = "dddd: " prefix length
+        local indent = string.rep(" ", 5 + col) -- 5 = "dddd:" prefix length, col is 1-based
         table.insert(result, string.format("%s^ %s: %s", indent, severity, message))
       end
     end

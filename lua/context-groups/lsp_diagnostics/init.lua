@@ -62,7 +62,7 @@ local function get_buffer_diagnostics(bufnr)
     if #context_lines > 0 then
       table.insert(result, "```")
       for i, cline in ipairs(context_lines) do
-        local lnum = context_start + i
+        local lnum = context_start + i - 1
         local prefix = lnum == diag.lnum and ">" or " "
         table.insert(result, string.format("%s %3d: %s", prefix, lnum + 1, cline))
       end

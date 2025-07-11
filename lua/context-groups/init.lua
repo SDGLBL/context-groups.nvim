@@ -3,7 +3,6 @@
 
 local config = require("context-groups.config")
 local core = require("context-groups.core")
-local lsp = require("context-groups.lsp")
 local ui = require("context-groups.ui")
 
 ---@class ContextGroups
@@ -14,9 +13,6 @@ local M = {}
 function M.setup(opts)
   -- Initialize configuration
   config.setup(opts or {})
-
-  -- Setup LSP integration
-  lsp.setup()
 
   -- Setup UI components
   ui.setup()
@@ -138,4 +134,3 @@ function M.get_buffer_paths()
 end
 
 return M
-

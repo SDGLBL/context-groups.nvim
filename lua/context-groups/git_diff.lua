@@ -1,4 +1,4 @@
--- lua/context-groups/git_diff_inline/init.lua
+-- lua/context-groups/git_diff.lua
 -- Git diff integration module
 
 local core = require("context-groups.core")
@@ -185,4 +185,3 @@ function M.get_all_modified_buffers_with_git_diff()
 end
 
 return M
-

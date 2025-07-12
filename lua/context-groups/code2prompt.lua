@@ -1,4 +1,4 @@
--- lua/context-groups/code2prompt/init.lua
+-- lua/context-groups/code2prompt.lua
 -- Pure Lua implementation for copying buffer contents to clipboard
 
 local core = require("context-groups.core")
@@ -96,4 +96,3 @@ function M.generate_prompt()
 end
 
 return M
-

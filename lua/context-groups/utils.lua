@@ -50,23 +50,5 @@ function Utils.get_relative_path(path, root)
   return vim.fn.fnamemodify(path, ":~:.")
 end
 
--- YAML utilities
-Utils.YAML = {}
-
--- Parse YAML content to Lua table
----@param content string YAML content
----@return table? parsed_content
-function Utils.YAML.parse(content)
-  local yaml_parser = require("context-groups.utils.yaml_parser")
-  return yaml_parser.parse(content)
-end
-
--- Encode table to YAML string
----@param tbl table Table to encode
----@return string yaml_string
-function Utils.YAML.encode(tbl)
-  local yaml_parser = require("context-groups.utils.yaml_parser")
-  return yaml_parser.encode(tbl)
-end
 
 return Utils

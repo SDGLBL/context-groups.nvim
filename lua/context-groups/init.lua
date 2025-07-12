@@ -82,37 +82,37 @@ end
 -- Get LSP diagnostics for current buffer
 ---@return boolean success
 function M.get_lsp_diagnostics_current()
-  return require("context-groups.lsp_diagnostics").get_current_buffer_diagnostics()
+  return require("context-groups.diagnostics").get_current_buffer_diagnostics()
 end
 
 -- Get LSP diagnostics for all open buffers
 ---@return boolean success
 function M.get_lsp_diagnostics_all()
-  return require("context-groups.lsp_diagnostics").get_all_buffer_diagnostics()
+  return require("context-groups.diagnostics").get_all_buffer_diagnostics()
 end
 
 -- Get current buffer with inline LSP diagnostics
 ---@return boolean success
 function M.get_inline_lsp_diagnostics_current()
-  return require("context-groups.lsp_diagnostics_inline").get_current_buffer_with_inline_diagnostics()
+  return require("context-groups.diagnostics").get_current_buffer_with_inline_diagnostics()
 end
 
 -- Get all buffers with inline LSP diagnostics
 ---@return boolean success
 function M.get_inline_lsp_diagnostics_all()
-  return require("context-groups.lsp_diagnostics_inline").get_all_buffers_with_inline_diagnostics()
+  return require("context-groups.diagnostics").get_all_buffers_with_inline_diagnostics()
 end
 
 -- Get current buffer with Git diff
 ---@return boolean success
 function M.get_git_diff_current()
-  return require("context-groups.git_diff_inline").get_current_buffer_with_git_diff()
+  return require("context-groups.git_diff").get_current_buffer_with_git_diff()
 end
 
 -- Get all modified buffers with Git diff
 ---@return boolean success
 function M.get_git_diff_all_modified()
-  return require("context-groups.git_diff_inline").get_all_modified_buffers_with_git_diff()
+  return require("context-groups.git_diff").get_all_modified_buffers_with_git_diff()
 end
 
 -- Copy the relative paths of all open buffers to clipboard

@@ -12,11 +12,11 @@ Context Groups is a Neovim plugin designed to enhance AI-assisted coding by mana
 - Project-level configuration persistence
 - Automatic project root detection
 - Telescope integration for file selection and preview
-- LSP integration for intelligent imports
 - Enhanced diagnostics and code sharing:
   - Inline LSP diagnostics with code context
   - Git diff integration for tracking changes
   - Buffer path utilities for easy reference
+- AI-optimized code formatting and export capabilities
 
 ## Installation
 
@@ -62,13 +62,13 @@ require('context-groups').setup({
     code2prompt = "<leader>cy",
     lsp_diagnostics_current = "<leader>cl",
     lsp_diagnostics_all = "<leader>cL",
+    lsp_diagnostics_inline_current = "<leader>cI",
+    lsp_diagnostics_inline_all = "<leader>cA",
+    git_diff_current = "<leader>cg",
+    git_diff_all_modified = "<leader>cG",
+    buffer_paths = "<leader>cp",
   },
   storage_path = vim.fn.stdpath("data") .. "/context-groups",
-  import_prefs = {
-    show_stdlib = false,
-    show_external = false,
-    ignore_patterns = {},
-  },
   project_markers = {
     ".git",
     ".svn",
@@ -84,39 +84,35 @@ require('context-groups').setup({
 
 ### Basic Workflow
 
-1. Add files to context group:
+1. **Add files to context group:**
    - Use `:ContextGroupAdd` command or press `<leader>ca`
    - Select files using Telescope interface
    - Press <CR> to add a file or <C-Space> to add without closing
 
-2. View current context group:
+2. **View current context group:**
    - Use `:ContextGroupShow` command or press `<leader>cs`
    - Preview file contents
    - Remove files using <C-d>
    - Open files in split with <C-v>
 
-3. Add imports to context group:
-   - Use `:ContextGroupAddImports` command
-   - Filter by external/stdlib using <C-e>/<C-t>
-   - Select imports to add to context group
-
-4. Get enhanced code context:
+3. **Get enhanced code context:**
    - Copy buffer content with LSP diagnostics: `:ContextGroupLSPDiagnosticsInlineCurrent` or `<leader>cI`
    - Copy all buffers with LSP diagnostics: `:ContextGroupLSPDiagnosticsInlineAll` or `<leader>cA`
    - Copy buffer with Git diff comparison: `:ContextGroupGitDiffCurrent` or `<leader>cg`
    - Copy all modified buffers with Git diffs: `:ContextGroupGitDiffAllModified` or `<leader>cG`
    - Copy all buffer paths: `:ContextGroupCopyBufferPaths` or `<leader>cp`
 
-5. Format code for AI tools:
+4. **Format code for AI tools:**
    - Use `:ContextGroupBuffer2Prompt` or `<leader>cy` to format open buffer contents for sharing with AI tools
 
 ## Recent Updates
 
+- **July 2025**: Major refactoring to reorganize module structure and extract components into focused modules (diagnostics, git_diff, export, storage, project utilities).
+- **July 2025**: Removed LSP integration and language handlers to simplify the codebase and focus on core context management functionality.
 - **May 2025**: Added Git diff integration for tracking file changes and comparing with Git history.
 - **May 2025**: Added inline LSP diagnostics feature for enhanced error visualization within code context.
 - **May 2025**: Added buffer paths utilities for easy reference and sharing.
 - **March 2025**: Enhanced buffer formatting for better AI tool integration.
-- **February 2025**: Major refactoring to improve code organization and maintainability.
 
 ## License
 

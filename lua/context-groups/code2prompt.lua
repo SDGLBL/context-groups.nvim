@@ -40,6 +40,53 @@ local function get_open_buffer_files()
   return files, root
 end
 
+-- Format and copy the contents of current buffer to clipboard
+---@return boolean success
+function M.generate_current_buffer_prompt()
+  local current_bufnr = vim.api.nvim_get_current_buf()
+  local file_path = vim.api.nvim_buf_get_name(current_bufnr)
+  
+  if not file_path or file_path == "" or vim.fn.filereadable(file_path) ~= 1 then
+    vim.notify("Current buffer is not a valid file", vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Check if current buffer is modified
+  if vim.bo[current_bufnr].modified then
+    vim.notify("Please save the current buffer before generating content", vim.log.levels.WARN)
+    return false
+  end
+
+  local project_root = core.find_root(file_path)
+  local rel_path = file_path:sub(#project_root + 2) -- +2 to remove the trailing slash
+  local project_name = vim.fn.fnamemodify(project_root, ":t")
+
+  -- Begin building the output
+  local output = {}
+  table.insert(output, "---")
+  table.insert(output, string.format("Here is a file I've selected from the project %s.", project_name))
+  table.insert(output, "It is as follows:")
+
+  -- Add file content
+  local content = utils.read_file_content(file_path)
+  if content then
+    table.insert(output, "```")
+    table.insert(output, file_path)
+    table.insert(output, content)
+    table.insert(output, "```")
+  else
+    vim.notify("Failed to read current buffer content", vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Combine all text and copy to clipboard
+  local final_output = table.concat(output, "\n")
+  vim.fn.setreg("+", final_output)
+
+  vim.notify(string.format("Current buffer content copied to clipboard: %s", rel_path), vim.log.levels.INFO)
+  return true
+end
+
 -- Format and copy the contents of open buffer files to clipboard
 ---@return boolean success
 function M.generate_prompt()

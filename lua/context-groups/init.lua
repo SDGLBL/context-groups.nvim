@@ -72,6 +72,13 @@ function M.export_contents(opts)
   return core.export.export_contents(opts)
 end
 
+-- Call code2prompt on current buffer
+---@return boolean success
+function M.call_code2prompt_current()
+  -- Call code2prompt module to generate prompt for current buffer
+  return require("context-groups.code2prompt").generate_current_buffer_prompt()
+end
+
 -- Call code2prompt on all open buffers
 ---@return boolean success
 function M.call_code2prompt()

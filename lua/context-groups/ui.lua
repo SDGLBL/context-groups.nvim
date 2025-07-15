@@ -101,9 +101,14 @@ local commands = {
     end,
   },
 
-  -- code2prompt command
+  -- code2prompt commands
   code2prompt = {
-    -- Copy contents of open buffers to clipboard in a formatted way
+    -- Copy contents of current buffer to clipboard in a formatted way
+    generate_current = function()
+      require("context-groups").call_code2prompt_current()
+    end,
+
+    -- Copy contents of all open buffers to clipboard in a formatted way
     generate = function()
       require("context-groups").call_code2prompt()
     end,
@@ -208,9 +213,13 @@ function M.register_commands()
     desc = "Toggle git changes in export",
   })
 
-  -- code2prompt command
+  -- code2prompt commands
+  create_command("ContextGroupBuffer2PromptCurrent", commands.code2prompt.generate_current, {
+    desc = "Copy contents of current buffer to clipboard in a formatted way",
+  })
+
   create_command("ContextGroupBuffer2Prompt", commands.code2prompt.generate, {
-    desc = "Copy contents of open buffers to clipboard in a formatted way",
+    desc = "Copy contents of all open buffers to clipboard in a formatted way",
   })
 
   -- LSP diagnostics commands
@@ -260,11 +269,18 @@ function M.setup_keymaps()
     picker.show_context_group()
   end, { desc = "Show current context group" })
 
+  -- Call code2prompt on current buffer
+  if keymaps.code2prompt_current then
+    vim.keymap.set("n", keymaps.code2prompt_current, function()
+      require("context-groups").call_code2prompt_current()
+    end, { desc = "Copy current buffer content to clipboard in formatted way" })
+  end
+
   -- Call code2prompt on all open buffers
   if keymaps.code2prompt then
     vim.keymap.set("n", keymaps.code2prompt, function()
       require("context-groups").call_code2prompt()
-    end, { desc = "Copy buffer contents to clipboard in formatted way" })
+    end, { desc = "Copy all buffer contents to clipboard in formatted way" })
   end
 
   -- Get LSP diagnostics for current buffer

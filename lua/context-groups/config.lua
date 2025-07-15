@@ -1,7 +1,8 @@
 ---@class ContextGroupsKeymaps
 ---@field add_context string Keymap to add context file
 ---@field show_context string Keymap to show context group
----@field code2prompt? string Keymap to copy buffer contents to clipboard in a formatted way
+---@field code2prompt_current? string Keymap to copy current buffer contents to clipboard in a formatted way
+---@field code2prompt? string Keymap to copy all buffer contents to clipboard in a formatted way
 ---@field lsp_diagnostics_current? string Keymap to get LSP diagnostics for current buffer
 ---@field lsp_diagnostics_all? string Keymap to get LSP diagnostics for all open buffers
 ---@field lsp_diagnostics_inline_current? string Keymap to get current buffer with inline LSP diagnostics
@@ -33,7 +34,8 @@ local DEFAULT_CONFIG = {
   keymaps = {
     add_context = "<leader>ca",
     show_context = "<leader>cs",
-    code2prompt = "<leader>cy",
+    code2prompt_current = "<leader>cy",
+    code2prompt = "<leader>cY",
     lsp_diagnostics_current = "<leader>cl",
     lsp_diagnostics_all = "<leader>cL",
     lsp_diagnostics_inline_current = "<leader>cI",

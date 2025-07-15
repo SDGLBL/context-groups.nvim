@@ -2,9 +2,9 @@
 -- Core context management functionality
 
 local config = require("context-groups.config")
-local utils = require("context-groups.utils")
-local storage = require("context-groups.storage")
 local project = require("context-groups.project")
+local storage = require("context-groups.storage")
+local utils = require("context-groups.utils")
 
 local M = {}
 

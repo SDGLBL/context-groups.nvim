@@ -2,8 +2,8 @@
 -- Export functionality extracted from core.lua
 
 local config = require("context-groups.config")
-local utils = require("context-groups.utils")
 local project = require("context-groups.project")
+local utils = require("context-groups.utils")
 
 local M = {}
 

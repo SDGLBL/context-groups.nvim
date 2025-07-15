@@ -50,5 +50,4 @@ function Utils.get_relative_path(path, root)
   return vim.fn.fnamemodify(path, ":~:.")
 end
 
-
 return Utils

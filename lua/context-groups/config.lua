@@ -145,4 +145,3 @@ function M.get_storage_path(component)
 end
 
 return M
-

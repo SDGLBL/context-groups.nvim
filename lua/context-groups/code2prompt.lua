@@ -45,7 +45,7 @@ end
 function M.generate_current_buffer_prompt()
   local current_bufnr = vim.api.nvim_get_current_buf()
   local file_path = vim.api.nvim_buf_get_name(current_bufnr)
-  
+
   if not file_path or file_path == "" or vim.fn.filereadable(file_path) ~= 1 then
     vim.notify("Current buffer is not a valid file", vim.log.levels.ERROR)
     return false

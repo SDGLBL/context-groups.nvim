@@ -218,6 +218,17 @@ function M.show_context_group()
           end
         end)
 
+        -- Clear all files from context group
+        map("i", "<C-x>", function()
+          local success = core.clear_context_group(source_bufnr)
+          if success then
+            vim.notify("Cleared all files from context group")
+            actions.close(prompt_bufnr)
+          else
+            vim.notify("Failed to clear context group", vim.log.levels.ERROR)
+          end
+        end)
+
         return true
       end,
     })

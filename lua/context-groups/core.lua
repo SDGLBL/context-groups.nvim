@@ -131,6 +131,7 @@ function M.get_project_files(bufnr)
   end, all_files)
 end
 
+
 ---Add file to context group
 ---@param file string File to add
 ---@param target_bufnr integer|nil Target buffer number
@@ -176,6 +177,7 @@ function M.add_context_file(file, target_bufnr)
 
   return success
 end
+
 
 ---Remove file from context group
 ---@param file string File to remove
@@ -277,6 +279,163 @@ function M.get_context_stats(target_bufnr)
   end
 
   return stats
+end
+
+---Get project files and directories for picker
+---@param bufnr integer|nil Buffer number (nil for current buffer)
+---@return string[] items List of project files and directories
+function M.get_project_items(bufnr)
+  local file_path = get_current_filepath(bufnr)
+  if not file_path then
+    vim.notify("No valid file path found", vim.log.levels.WARN)
+    return {}
+  end
+
+  local root = M.find_root(file_path)
+  local ignore_patterns = config.get().import_prefs.ignore_patterns or {}
+
+  -- Use efficient external tools to get all files and directories
+  local all_items = project.get_files_and_directories(root)
+
+  -- Filter out ignored items
+  if #ignore_patterns == 0 then
+    return all_items
+  end
+
+  return vim.tbl_filter(function(item)
+    -- Check ignore patterns
+    for _, pattern in ipairs(ignore_patterns) do
+      if item:match(pattern) then
+        return false
+      end
+    end
+    return true
+  end, all_items)
+end
+
+---Get all files in a directory recursively
+---@param dir_path string Directory path
+---@return string[] files List of files in directory
+function M.get_directory_files(dir_path)
+  if vim.fn.isdirectory(dir_path) ~= 1 then
+    return {}
+  end
+
+  local ignore_patterns = config.get().import_prefs.ignore_patterns or {}
+  local files = {}
+
+  -- Use fd if available (fastest for directory scanning)
+  if vim.fn.executable("fd") == 1 then
+    local cmd = string.format("fd -t f . %s", vim.fn.shellescape(dir_path))
+    local handle = io.popen(cmd)
+    if handle then
+      local result = handle:read("*a")
+      handle:close()
+      local all_files = vim.split(result, "\n")
+      
+      for _, file in ipairs(all_files) do
+        if file ~= "" then
+          table.insert(files, file)
+        end
+      end
+    end
+  else
+    -- Fallback to find
+    local cmd = string.format("find %s -type f", vim.fn.shellescape(dir_path))
+    local handle = io.popen(cmd)
+    if handle then
+      local result = handle:read("*a")
+      handle:close()
+      local all_files = vim.split(result, "\n")
+      
+      for _, file in ipairs(all_files) do
+        if file ~= "" then
+          table.insert(files, file)
+        end
+      end
+    end
+  end
+
+  -- Filter out ignored files if patterns exist
+  if #ignore_patterns == 0 then
+    return files
+  end
+
+  return vim.tbl_filter(function(file)
+    for _, pattern in ipairs(ignore_patterns) do
+      if file:match(pattern) then
+        return false
+      end
+    end
+    return true
+  end, files)
+end
+
+---Add multiple files to context group
+---@param files string[] Files to add
+---@param target_bufnr integer|nil Target buffer number
+---@return table result {success: boolean, added: number, skipped: number, errors: string[]}
+function M.add_multiple_context_files(files, target_bufnr)
+  local result = {
+    success = false,
+    added = 0,
+    skipped = 0,
+    errors = {}
+  }
+
+  if #files == 0 then
+    table.insert(result.errors, "No files provided")
+    return result
+  end
+
+  local target_path = get_current_filepath(target_bufnr)
+  if not target_path then
+    table.insert(result.errors, "No valid file path found")
+    return result
+  end
+
+  local root = M.find_root(target_path)
+  local store = storage.get_storage(root)
+
+  -- Get current context group
+  local context_group = store:get(target_path) or {}
+  local context_set = {}
+  for _, file in ipairs(context_group) do
+    context_set[file] = true
+  end
+
+  -- Process each file
+  for _, file in ipairs(files) do
+    -- Check if file is readable
+    if not utils.read_file_content(file) then
+      table.insert(result.errors, "File not readable: " .. file)
+    elseif context_set[file] then
+      result.skipped = result.skipped + 1
+    else
+      table.insert(context_group, file)
+      context_set[file] = true
+      result.added = result.added + 1
+    end
+  end
+
+  -- Save updated context group if any files were added
+  if result.added > 0 then
+    local success = store:set(target_path, context_group)
+    if success then
+      result.success = true
+      -- Trigger configured callback function
+      local cfg = config.get()
+      if cfg.on_context_change then
+        cfg.on_context_change()
+      end
+    else
+      table.insert(result.errors, "Failed to save context group")
+    end
+  else
+    result.success = true
+  end
+
+  return result
 end
 
 return M

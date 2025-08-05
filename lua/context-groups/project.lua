@@ -98,6 +98,54 @@ function M.get_files(root)
   return {}
 end
 
+---Get all project files and directories
+---@param root? string Project root (default: current file's project)
+---@return string[] items List of project files and directories
+function M.get_files_and_directories(root)
+  root = root or M.find_root(vim.fn.expand("%:p"))
+  local items = {}
+
+  -- Use fd if available (fastest and handles both files and directories)
+  if vim.fn.executable("fd") == 1 then
+    local cmd = string.format("fd . %s", vim.fn.shellescape(root))
+    local handle = io.popen(cmd)
+    if handle then
+      local result = handle:read("*a")
+      handle:close()
+      local all_items = vim.split(result, "\n")
+      
+      -- Filter out empty lines
+      for _, item in ipairs(all_items) do
+        if item ~= "" then
+          table.insert(items, item)
+        end
+      end
+      
+      return items
+    end
+  end
+
+  -- Fallback to find for both files and directories
+  local cmd = string.format("find %s \\( -type f -o -type d \\)", vim.fn.shellescape(root))
+  local handle = io.popen(cmd)
+  if handle then
+    local result = handle:read("*a")
+    handle:close()
+    local all_items = vim.split(result, "\n")
+    
+    -- Filter out empty lines and the root directory itself
+    for _, item in ipairs(all_items) do
+      if item ~= "" and item ~= root then
+        table.insert(items, item)
+      end
+    end
+    
+    return items
+  end
+
+  return {}
+end
+
 ---Get paths of all open buffers
 ---@return string[] paths List of relative file paths from project root
 ---@return string root Project root directory

@@ -64,19 +64,23 @@ function M.show_file_picker()
   -- Store the source buffer number
   source_bufnr = vim.api.nvim_get_current_buf()
 
-  local project_files = core.get_project_files(source_bufnr)
+  local project_items = core.get_project_items(source_bufnr)
 
   pickers
     .new(config.get().telescope_theme, {
       prompt_title = "Add to Context Group",
       finder = finders.new_table({
-        results = project_files,
+        results = project_items,
         entry_maker = function(entry)
+          local is_directory = vim.fn.isdirectory(entry) == 1
+          local display_name = vim.fn.fnamemodify(entry, ":~:.")
+
           return {
             value = entry,
-            display = vim.fn.fnamemodify(entry, ":~:."),
+            display = display_name,
             ordinal = entry,
             path = entry,
+            is_directory = is_directory,
           }
         end,
       }),
@@ -88,9 +92,52 @@ function M.show_file_picker()
           local selection = action_state.get_selected_entry()
 
           if selection then
-            local success = core.add_context_file(selection.value, source_bufnr)
-            if success then
-              vim.notify(string.format("Added %s to context group", selection.display))
+            if selection.is_directory then
+              -- Get all files in directory
+              local files = core.get_directory_files(selection.value)
+
+              -- Always exclude the source file (the file that triggered the picker)
+              local source_file = vim.api.nvim_buf_get_name(source_bufnr)
+              if source_file and source_file ~= "" then
+                files = vim.tbl_filter(function(file)
+                  return file ~= source_file
+                end, files)
+              end
+
+              if #files > 0 then
+                local result = core.add_multiple_context_files(files, source_bufnr)
+                if result.success then
+                  vim.notify(
+                    string.format(
+                      "Added %d files from %s (skipped %d duplicates)",
+                      result.added,
+                      selection.display,
+                      result.skipped
+                    )
+                  )
+                  if #result.errors > 0 then
+                    vim.notify("Errors: " .. table.concat(result.errors, ", "), vim.log.levels.WARN)
+                  end
+                else
+                  vim.notify(
+                    "Failed to add directory files: " .. table.concat(result.errors, ", "),
+                    vim.log.levels.ERROR
+                  )
+                end
+              else
+                vim.notify("No files found in directory: " .. selection.display, vim.log.levels.WARN)
+              end
+            else
+              -- For individual files, check if it's not the source file
+              local source_file = vim.api.nvim_buf_get_name(source_bufnr)
+              if selection.value == source_file then
+                vim.notify("Cannot add the current file to its own context group", vim.log.levels.WARN)
+              else
+                local success = core.add_context_file(selection.value, source_bufnr)
+                if success then
+                  vim.notify(string.format("Added %s to context group", selection.display))
+                end
+              end
             end
           end
 
